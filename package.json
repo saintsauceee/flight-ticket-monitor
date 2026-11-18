@@ -1,0 +1,25 @@
+{
+  "name": "flight-ticket-monitor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Track flight prices over time, find the cheapest dates, and compare airlines on total cost.",
+  "workspaces": [
+    "server",
+    "web"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c cyan,magenta \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "test": "npm run test -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web",
+    "data:airports": "node scripts/build-airports.mjs"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.5"
+  }
+}
