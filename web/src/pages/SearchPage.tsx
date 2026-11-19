@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarRange, ExternalLink, History, Plane, PlaneTakeoff, RefreshCw, Scale, SearchX } from 'lucide-react';
-import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { ExternalLink, Plane, PlaneTakeoff, RefreshCw, SearchX } from 'lucide-react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import type { FlexQuery, FlightOffer, SearchQuery, SearchResult, WatchSummary } from '@shared/types';
 import { AirlineCompare } from '@/components/AirlineCompare';
 import { BagPrefsControl } from '@/components/Bags';
 import { DateStrip } from '@/components/DateStrip';
+import { LandingStory } from '@/components/LandingStory';
 import { Band, PageBody } from '@/components/Layout';
 import { OfferCard, priceOffer } from '@/components/OfferCard';
 import { LevelBadge, LevelMeter } from '@/components/PriceLevel';
@@ -276,16 +277,6 @@ function Results({ result, watch, onRefresh, refreshing }: { result: SearchResul
   );
 }
 
-function Feature({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
-  return (
-    <div className="rounded-2xl bg-surface p-5 shadow-card sm:p-6">
-      <div className="mb-4 flex size-10 items-center justify-center rounded-control bg-accent-soft text-accent-strong">{icon}</div>
-      <h3 className="display text-base font-bold">{title}</h3>
-      <p className="mt-1 text-[13px] leading-relaxed text-ink-3">{children}</p>
-    </div>
-  );
-}
-
 const SAMPLES: [string, string, string, number][] = [
   ['JFK', 'LHR', 'New York → London', 7],
   ['SFO', 'NRT', 'San Francisco → Tokyo', 10],
@@ -312,26 +303,10 @@ function SampleRoutes({ currency }: { currency: string }) {
   );
 }
 
-function Welcome() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-3">
-      <Feature icon={<CalendarRange className="size-5" />} title="Cheapest dates">
-        Search any dates to see the lowest fare for every day of the coming months, then open a date to compare its flights.
-      </Feature>
-      <Feature icon={<History className="size-5" />} title="Price history and alerts">
-        Track a trip, with or without fixed dates. Every check is recorded, and you are told when a cheap fare shows up.
-      </Feature>
-      <Feature icon={<Scale className="size-5" />} title="Airlines side by side">
-        Compare carriers on total price with your bags, legroom, Wi-Fi, fare rules and emissions.
-      </Feature>
-    </div>
-  );
-}
-
 /** A flight path drawn faintly across the right of the landing band. Decoration only. */
 function HeroArt() {
   return (
-    <div className="absolute top-8 right-[max(1.5rem,calc(50%-35rem))] hidden h-56 w-[30rem] text-white lg:block">
+    <div className="hero-art-drift absolute top-8 right-[max(1.5rem,calc(50%-35rem))] hidden h-56 w-[30rem] text-white lg:block">
       <svg viewBox="0 0 480 224" fill="none" className="size-full">
         <path d="M14 206 C 150 196, 310 132, 444 40" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.5" strokeDasharray="1 8" strokeLinecap="round" />
         <circle cx="14" cy="206" r="3.5" fill="currentColor" fillOpacity="0.55" />
@@ -432,7 +407,7 @@ export function SearchPage() {
             <FlexSearch flex={flex} />
           </Suspense>
         ) : !query ? (
-          <Welcome />
+          <LandingStory />
         ) : search.isPending ? (
           <ResultsSkeleton />
         ) : search.isError ? (

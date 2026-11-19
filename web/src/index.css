@@ -331,6 +331,92 @@
   transition: none !important;
 }
 
+/*
+ * Landing page scroll effects (LandingStory, and the flight path in the hero).
+ *
+ * These are decoration: the page says the same thing without them. So they are
+ * an enhancement only. A browser without scroll-driven animations, anyone who
+ * has asked their system for reduced motion, and print all get the still page.
+ * The motion is tied to the reader's own scrolling, which is never slowed,
+ * redirected or pinned, and only transform and opacity change, which the
+ * browser can animate without re-laying-out the page.
+ */
+@keyframes story-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+}
+@keyframes story-drift {
+  from {
+    transform: translateY(var(--drift, 0px));
+  }
+  to {
+    transform: translateY(calc(var(--drift, 0px) * -1));
+  }
+}
+@keyframes story-fill {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes story-reach {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes hero-drift {
+  to {
+    transform: translateY(5rem);
+  }
+}
+/* The flown stretch of the route and the reached stops only mean something when they follow the scroll. */
+.story-progress,
+.story-reached {
+  display: none;
+}
+@supports ((animation-timeline: view()) and (animation-range: entry)) {
+  @media screen and (prefers-reduced-motion: no-preference) {
+    /* `animation-timeline` and `animation-range` come after `animation`: the shorthand resets them. */
+
+    /* Words and pictures settle into place as they come on screen, and are fully there once fully in view. */
+    .story-reveal {
+      animation: story-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+    /* The layers of a picture follow that picture's passage across the screen, each by its own distance. */
+    .story-scene {
+      view-timeline: --scene block;
+    }
+    .story-layer {
+      animation: story-drift linear both;
+      animation-timeline: --scene;
+      animation-range: cover;
+    }
+    /* Both measured against the middle of the screen, which is where the plane sits. */
+    .story-progress {
+      display: block;
+      transform-origin: top;
+      animation: story-fill linear both;
+      animation-timeline: view(block 49% 49%);
+      animation-range: cover;
+    }
+    .story-reached {
+      display: block;
+      animation: story-reach linear both;
+      animation-timeline: view(block 49% 49%);
+      animation-range: cover;
+    }
+    /* The hero's flight path falls behind the page a little as it scrolls away. */
+    .hero-art-drift {
+      animation: hero-drift linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0px 40rem;
+    }
+  }
+}
+
 /* Recharts draws focus outlines on its SVG wrapper; the crosshair already shows focus. */
 .recharts-wrapper:focus,
 .recharts-surface:focus {
