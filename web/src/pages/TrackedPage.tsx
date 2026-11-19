@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, ArrowRight, Pause, Radar, Search, Target } from 'lucide-react';
+import { AlertTriangle, Pause, Radar, Search, Target } from 'lucide-react';
 import { Link } from 'react-router';
 import type { WatchSummary } from '@shared/types';
-import { useMeta } from '@/components/Layout';
+import { PageBody, PageHeader, useMeta } from '@/components/Layout';
 import { Delta, LevelBadge } from '@/components/PriceLevel';
 import { Sparkline } from '@/components/Sparkline';
-import { Badge, Button, cx, EmptyState, ErrorNote, Skeleton } from '@/components/ui';
+import { Badge, Button, buttonClass, cx, EmptyState, ErrorNote, RouteTitle, Skeleton } from '@/components/ui';
 import { api, keys } from '@/lib/api';
 import { addDays, money, plural, relativeTime, shortDay, todayString, travellers, tripDates, windowLabel } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
@@ -23,18 +23,16 @@ function WatchCard({ watch }: { watch: WatchSummary }) {
     <Link
       to={`/tracked/${watch.id}`}
       className={cx(
-        'group flex flex-col rounded-xl border border-line bg-surface p-4 shadow-card transition-colors hover:border-line-strong',
+        'group flex flex-col rounded-2xl bg-surface p-5 shadow-card transition-[box-shadow,transform] hover:shadow-lift motion-safe:hover:-translate-y-0.5',
         (watch.expired || !watch.active) && 'opacity-75',
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="flex items-center gap-1.5 text-[15px] font-semibold tracking-tight">
-            <span className="truncate">{watch.originAirport?.city ?? query.origin}</span>
-            <ArrowRight className="size-3.5 shrink-0 text-ink-3" aria-label="to" />
-            <span className="truncate">{watch.destinationAirport?.city ?? query.destination}</span>
+          <h3 className="display text-[17px] leading-snug font-bold">
+            <RouteTitle from={watch.originAirport?.city ?? query.origin} to={watch.destinationAirport?.city ?? query.destination} />
           </h3>
-          <p className="mt-0.5 truncate text-xs text-ink-3">
+          <p className="mt-1 truncate text-xs text-ink-3">
             <span className="code-face">
               {query.origin}–{query.destination}
             </span>{' '}
@@ -44,9 +42,9 @@ function WatchCard({ watch }: { watch: WatchSummary }) {
         {watch.unreadAlerts > 0 && <Badge tone="accent">{watch.unreadAlerts} new</Badge>}
       </div>
 
-      <div className="mt-4 flex items-end justify-between gap-3">
+      <div className="mt-5 flex items-end justify-between gap-3">
         <div>
-          <div className="text-[1.75rem] leading-none font-semibold tracking-tight">
+          <div className="display text-[2rem] leading-none font-extrabold">
             {watch.currentPrice != null ? money(watch.currentPrice, query.currency) : <span className="text-ink-3">—</span>}
           </div>
           <div className="mt-1.5 flex h-4 items-center gap-2">
@@ -56,7 +54,7 @@ function WatchCard({ watch }: { watch: WatchSummary }) {
         <Sparkline points={watch.spark} width={116} height={40} label={`Price trend over ${watch.spark.length} observations`} />
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
         {watch.expired ? (
           <Badge>Departed</Badge>
         ) : !watch.active ? (
@@ -82,18 +80,18 @@ function WatchCard({ watch }: { watch: WatchSummary }) {
         )}
       </div>
 
-      <dl className="mt-3.5 grid grid-cols-3 gap-2 border-t border-line pt-3 text-xs">
+      <dl className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3.5 text-xs">
         <div>
           <dt className="text-ink-3">Lowest seen</dt>
-          <dd className="tnum mt-0.5 font-medium text-ink-2">{watch.lowestPrice != null ? money(watch.lowestPrice, query.currency) : '—'}</dd>
+          <dd className="tnum mt-0.5 text-[13px] font-semibold text-ink">{watch.lowestPrice != null ? money(watch.lowestPrice, query.currency) : '—'}</dd>
         </div>
         <div>
           <dt className="text-ink-3">Average</dt>
-          <dd className="tnum mt-0.5 font-medium text-ink-2">{watch.averagePrice != null ? money(watch.averagePrice, query.currency) : '—'}</dd>
+          <dd className="tnum mt-0.5 text-[13px] font-semibold text-ink">{watch.averagePrice != null ? money(watch.averagePrice, query.currency) : '—'}</dd>
         </div>
         <div className="min-w-0">
           <dt className="text-ink-3">{flex ? 'Cheapest dates' : 'Cheapest now'}</dt>
-          <dd className="mt-0.5 truncate font-medium text-ink-2">{flex ? (cheapestDates ?? '—') : (watch.cheapestAirline?.name ?? '—')}</dd>
+          <dd className="mt-0.5 truncate text-[13px] font-semibold text-ink">{flex ? (cheapestDates ?? '—') : (watch.cheapestAirline?.name ?? '—')}</dd>
         </div>
       </dl>
       <p className="mt-2.5 text-[11px] text-ink-3">
@@ -136,26 +134,25 @@ export function TrackedPage() {
   const past = watches?.filter((w) => w.expired) ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Tracked trips</h1>
-          <p className="mt-0.5 text-[13px] text-ink-3">
-            {meta ? `Each trip is re-checked on its own schedule (every ${meta.defaultCheckIntervalHours} hours by default) and every price is kept.` : ' '}
-          </p>
-        </div>
-        <Link to="/" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-sm font-medium text-on-accent shadow-sm transition hover:brightness-110">
-          <Search className="size-4" aria-hidden />
-          Track another trip
-        </Link>
-      </div>
+    <>
+      <PageHeader
+        title="Tracked trips"
+        subtitle={meta ? `Each trip is re-checked on its own schedule (every ${meta.defaultCheckIntervalHours} hours by default) and every price is kept.` : ' '}
+        action={
+          <Link to="/" className={buttonClass('primary', 'md', 'sm:pl-3.5')}>
+            <Search className="size-4" strokeWidth={2.5} aria-hidden />
+            Track another trip
+          </Link>
+        }
+      />
+      <PageBody>
 
       {error ? (
         <ErrorNote message={error.message} />
       ) : isPending ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }, (_, i) => (
-            <Skeleton key={i} className="h-60" />
+            <Skeleton key={i} className="h-64" />
           ))}
         </div>
       ) : watches.length === 0 ? (
@@ -164,7 +161,7 @@ export function TrackedPage() {
           title="Nothing tracked yet"
           action={
             <>
-              <Link to="/" className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-accent px-3.5 text-sm font-medium text-on-accent shadow-sm transition hover:brightness-110">
+              <Link to="/" className={buttonClass('primary')}>
                 Search for a trip
               </Link>
               {meta?.provider.demo && (
@@ -182,7 +179,7 @@ export function TrackedPage() {
       ) : (
         <>
           {live.length > 0 && (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {live.map((w) => (
                 <WatchCard key={w.id} watch={w} />
               ))}
@@ -190,8 +187,8 @@ export function TrackedPage() {
           )}
           {past.length > 0 && (
             <section>
-              <h2 className="mb-3 text-[13px] font-medium text-ink-3">Departed</h2>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <h2 className="display mb-3 text-base font-bold text-ink-2">Departed</h2>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {past.map((w) => (
                   <WatchCard key={w.id} watch={w} />
                 ))}
@@ -200,6 +197,7 @@ export function TrackedPage() {
           )}
         </>
       )}
-    </div>
+      </PageBody>
+    </>
   );
 }

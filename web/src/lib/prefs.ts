@@ -43,7 +43,17 @@ const listeners = new Set<() => void>();
 
 function applyTheme(theme: ThemePref) {
   const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  const root = document.documentElement;
+  const next = dark ? 'dark' : 'light';
+  if (root.dataset.theme === next) return;
+  // Every colour changes at once; switch transitions off for a frame so nothing fades or lags behind.
+  root.classList.add('theme-switching');
+  root.dataset.theme = next;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      root.classList.remove('theme-switching');
+    });
+  });
 }
 
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(current.theme));

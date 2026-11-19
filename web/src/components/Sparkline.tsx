@@ -40,7 +40,7 @@ export function Sparkline({
 
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className={className} role="img" aria-label={label ?? 'Price trend'}>
-      <path d={path} fill="none" stroke="var(--ink-3)" strokeOpacity={0.75} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <path d={path} fill="none" stroke="var(--ink-3)" strokeOpacity={0.55} strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={lastX} cy={lastY} r={4} fill="var(--accent)" stroke="var(--surface)" strokeWidth={2} />
     </svg>
   );

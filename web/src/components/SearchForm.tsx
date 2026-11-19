@@ -18,7 +18,7 @@ import { addDays, plural, todayString } from '@/lib/format';
 import { setPrefs, usePrefs } from '@/lib/prefs';
 import { AirportInput } from './AirportInput';
 import { useMeta } from './Layout';
-import { Button, Card, cx, FieldLabel, inputClass, Segmented, Select } from './ui';
+import { Button, cx, Field, fieldInputClass, Segmented, Select } from './ui';
 
 /** Resolves an airport code to its full record (for showing the city of a code that came from the URL). */
 function useAirport(code: string | null): Airport | null {
@@ -126,9 +126,11 @@ export function SearchForm({
   const scanCost = meta ? flexScanCost(meta.provider) : 0;
 
   return (
-    <Card className="p-4 sm:p-5">
+    // A card on the navy band: "off-band" gives its controls the normal focus ring back.
+    // Its corners are concentric with the fields inside: 16px field radius + the padding (12px on phones, 16px wider).
+    <div className="off-band rounded-[1.75rem] bg-surface p-3 text-ink shadow-form sm:rounded-4xl sm:p-4">
       <form onSubmit={submit} noValidate>
-        <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="mb-3 flex flex-wrap items-center gap-2 sm:mb-4">
           <Segmented
             label="Trip type"
             value={roundTrip ? 'round' : 'oneway'}
@@ -183,26 +185,29 @@ export function SearchForm({
           </div>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_9.5rem_9.5rem_auto] lg:items-end">
-          <AirportInput label="From" value={origin} onChange={pick(setOriginCode)} placeholder="Origin city or airport" />
-          <button
-            type="button"
-            aria-label="Swap origin and destination"
-            title="Swap"
-            onClick={() => {
-              setOriginCode(destinationCode);
-              setDestinationCode(originCode);
-            }}
-            className="mx-auto flex size-10 items-center justify-center rounded-full border border-line-strong/70 bg-surface text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink max-lg:-my-1 max-lg:size-8 max-lg:rotate-90"
-          >
-            <ArrowLeftRight className="size-4" aria-hidden />
-          </button>
-          <AirportInput label="To" value={destination} onChange={pick(setDestinationCode)} placeholder="Destination city or airport" />
+        <div className="grid gap-2 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)_minmax(0,1fr)_auto]">
+          {/* The two airports share a cell so the swap button can sit on the seam between them. */}
+          <div className="relative grid gap-2 sm:grid-cols-2">
+            <AirportInput label="From" value={origin} onChange={pick(setOriginCode)} placeholder="City or airport" inputClassName="max-sm:pr-14 sm:pr-8" />
+            <AirportInput label="To" value={destination} onChange={pick(setDestinationCode)} placeholder="City or airport" inputClassName="max-sm:pr-14 sm:pl-8" labelClassName="sm:left-8" />
+            <button
+              type="button"
+              aria-label="Swap origin and destination"
+              title="Swap"
+              onClick={() => {
+                setOriginCode(destinationCode);
+                setDestinationCode(originCode);
+              }}
+              className="absolute top-1/2 z-10 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-surface text-ink-2 shadow-card transition-[color,box-shadow,transform] hover:text-accent-strong hover:shadow-lift active:scale-95 max-sm:right-3 max-sm:rotate-90 sm:left-1/2 sm:-translate-x-1/2"
+            >
+              <ArrowLeftRight className="size-4" aria-hidden />
+            </button>
+          </div>
+
           {anyDates ? (
-            <div className="grid grid-cols-2 gap-3 lg:contents">
-              <div>
-                <FieldLabel htmlFor="look-ahead">Leaving within</FieldLabel>
-                <Select id="look-ahead" variant="outline" size="lg" className="w-full" value={String(windowDays)} onChange={(v) => setWindowDays(Number(v))}>
+            <div className="grid grid-cols-2 gap-2 lg:contents">
+              <Field label="Leaving within" htmlFor="look-ahead">
+                <Select id="look-ahead" variant="bare" className="w-full" value={String(windowDays)} onChange={(v) => setWindowDays(Number(v))}>
                   {FLEX_WINDOWS.some((w) => w.days === windowDays) ? null : <option value={windowDays}>{windowDays} days</option>}
                   {FLEX_WINDOWS.map((w) => (
                     <option key={w.days} value={w.days}>
@@ -210,18 +215,9 @@ export function SearchForm({
                     </option>
                   ))}
                 </Select>
-              </div>
-              <div className={cx(!roundTrip && 'opacity-45')}>
-                <FieldLabel htmlFor="trip-length">Trip length</FieldLabel>
-                <Select
-                  id="trip-length"
-                  variant="outline"
-                  size="lg"
-                  className="w-full"
-                  disabled={!roundTrip}
-                  value={roundTrip ? String(tripDays) : ''}
-                  onChange={(v) => setTripDays(Number(v))}
-                >
+              </Field>
+              <Field label="Trip length" htmlFor="trip-length" disabled={!roundTrip}>
+                <Select id="trip-length" variant="bare" className="w-full" disabled={!roundTrip} value={roundTrip ? String(tripDays) : ''} onChange={(v) => setTripDays(Number(v))}>
                   {!roundTrip && <option value="">One way</option>}
                   {[...new Set([...TRIP_LENGTHS, tripDays])]
                     .sort((a, b) => a - b)
@@ -231,12 +227,11 @@ export function SearchForm({
                       </option>
                     ))}
                 </Select>
-              </div>
+              </Field>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 lg:contents">
-              <div>
-                <FieldLabel htmlFor="depart-date">Depart</FieldLabel>
+            <div className="grid grid-cols-2 gap-2 lg:contents">
+              <Field label="Depart" htmlFor="depart-date">
                 <input
                   id="depart-date"
                   type="date"
@@ -249,11 +244,10 @@ export function SearchForm({
                     if (next && returnDate && returnDate < next) setReturnDate(addDays(next, 7));
                     setDepartDate(next);
                   }}
-                  className={cx(inputClass, 'tnum')}
+                  className={cx(fieldInputClass, 'tnum')}
                 />
-              </div>
-              <div className={cx(!roundTrip && 'opacity-45')}>
-                <FieldLabel htmlFor="return-date">Return</FieldLabel>
+              </Field>
+              <Field label="Return" htmlFor="return-date" disabled={!roundTrip}>
                 <input
                   id="return-date"
                   type="date"
@@ -261,30 +255,32 @@ export function SearchForm({
                   min={departDate || today}
                   value={roundTrip ? returnDate : ''}
                   onChange={(e) => setReturnDate(e.target.value)}
-                  className={cx(inputClass, 'tnum disabled:cursor-not-allowed')}
+                  className={cx(fieldInputClass, 'tnum')}
                 />
-              </div>
+              </Field>
             </div>
           )}
-          <Button type="submit" variant="primary" size="lg" loading={busy} className="h-10 max-lg:w-full">
-            {!busy && <Search className="size-4" aria-hidden />}
+
+          {/* A touch less padding on the icon's side: the icon's own whitespace makes equal padding look lopsided. */}
+          <Button type="submit" variant="primary" size="xl" loading={busy} className="max-lg:w-full sm:pl-6">
+            {!busy && <Search className="size-[18px]" strokeWidth={2.5} aria-hidden />}
             Search
           </Button>
         </div>
 
         {error ? (
-          <p role="alert" className="mt-3 text-[13px] font-medium text-bad-ink">
+          <p role="alert" className="mt-3 px-1 text-[13px] font-semibold text-bad-ink">
             {error}
           </p>
         ) : (
           anyDates && (
-            <p className="mt-3 text-[13px] text-ink-3">
+            <p className="mt-3 px-1 text-[13px] text-ink-3">
               Finds the lowest fare for every departure date in that period{roundTrip ? `, returning ${plural(tripDays, 'night')} later` : ''}.
               {scanCost > 0 && ` Uses ${plural(scanCost, 'search', 'searches')}.`}
             </p>
           )
         )}
       </form>
-    </Card>
+    </div>
   );
 }

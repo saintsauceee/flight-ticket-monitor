@@ -1,17 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CalendarRange, ExternalLink, History, PlaneTakeoff, RefreshCw, Scale, SearchX } from 'lucide-react';
+import { CalendarRange, ExternalLink, History, Plane, PlaneTakeoff, RefreshCw, Scale, SearchX } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import type { FlexQuery, FlightOffer, SearchQuery, SearchResult, WatchSummary } from '@shared/types';
 import { AirlineCompare } from '@/components/AirlineCompare';
 import { BagPrefsControl } from '@/components/Bags';
 import { DateStrip } from '@/components/DateStrip';
+import { Band, PageBody } from '@/components/Layout';
 import { OfferCard, priceOffer } from '@/components/OfferCard';
 import { LevelBadge, LevelMeter } from '@/components/PriceLevel';
 import { SearchForm } from '@/components/SearchForm';
 import { Sparkline } from '@/components/Sparkline';
 import { TrackBox } from '@/components/TrackBox';
-import { Button, Card, cx, EmptyState, ErrorNote, Segmented, Select, Skeleton } from '@/components/ui';
+import { Button, buttonClass, Card, cx, EmptyState, ErrorNote, RouteTitle, Segmented, Select, Skeleton } from '@/components/ui';
 import { api, keys } from '@/lib/api';
 import { money, plural, relativeTime, travellers, tripDates } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
@@ -32,42 +33,41 @@ function Insight({ result, watch }: { result: SearchResult; watch: WatchSummary 
   const pastPrices = history.map((p) => p.price);
 
   return (
-    <Card className="grid gap-x-8 gap-y-5 p-4 sm:p-5 lg:grid-cols-[auto_minmax(0,1fr)_17rem] lg:items-center">
-      <div>
-        <div className="text-xs text-ink-3">Lowest fare{query.adults > 1 ? ` for ${query.adults}` : ''}</div>
-        <div className="mt-0.5 flex items-baseline gap-2.5">
-          <span className="text-[2.5rem] leading-none font-semibold tracking-tight">{lowest != null ? money(lowest, query.currency) : '—'}</span>
-          {insights?.level && <LevelBadge level={insights.level} />}
-        </div>
-        <div className="mt-1.5 text-[13px] text-ink-3">
-          {insights?.typicalRange
-            ? `Usually ${money(insights.typicalRange[0], query.currency)}–${money(insights.typicalRange[1], query.currency)} for this trip`
-            : 'No typical range available for this trip'}
-        </div>
-      </div>
-
-      <div className="grid gap-x-8 gap-y-4 sm:grid-cols-2 sm:items-center">
-        {insights?.typicalRange && lowest != null && (
-          <div>
-            <div className="mb-2 text-xs text-ink-3">Against the typical range</div>
-            <LevelMeter price={lowest} range={insights.typicalRange} currency={query.currency} />
+    <Card className="overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-x-10 gap-y-6 p-5 sm:p-6 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
+        <div>
+          <div className="eyebrow">Lowest fare{query.adults > 1 ? ` for ${query.adults}` : ''}</div>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span className="display text-5xl leading-none font-extrabold">{lowest != null ? money(lowest, query.currency) : '—'}</span>
+            {insights?.level && <LevelBadge level={insights.level} />}
           </div>
-        )}
-        {history.length > 1 && (
-          <div>
-            <div className="mb-1 text-xs text-ink-3">Last {plural(Math.round((Date.now() - new Date(history[0]!.t).getTime()) / 86_400_000), 'day')}</div>
-            <div className="flex items-center gap-3">
+          <div className="mt-2.5 text-[13px] text-ink-3">
+            {insights?.typicalRange
+              ? `Usually ${money(insights.typicalRange[0], query.currency)}–${money(insights.typicalRange[1], query.currency)} for this trip`
+              : 'No typical range available for this trip'}
+          </div>
+        </div>
+
+        <div className="grid gap-x-8 gap-y-5 sm:grid-cols-2 sm:items-center md:border-l md:border-line md:pl-10">
+          {insights?.typicalRange && lowest != null && (
+            <div>
+              <div className="mb-2.5 text-xs font-medium text-ink-3">Against the typical range</div>
+              <LevelMeter price={lowest} range={insights.typicalRange} currency={query.currency} />
+            </div>
+          )}
+          {history.length > 1 && (
+            <div>
+              <div className="mb-1 text-xs font-medium text-ink-3">Last {plural(Math.round((Date.now() - new Date(history[0]!.t).getTime()) / 86_400_000), 'day')}</div>
               <Sparkline points={[...history, ...(lowest != null ? [{ t: result.fetchedAt, price: lowest }] : [])]} width={150} height={40} />
-              <div className="tnum text-xs leading-relaxed text-ink-3">
-                <div>High {money(Math.max(...pastPrices), query.currency)}</div>
-                <div>Low {money(Math.min(...pastPrices), query.currency)}</div>
+              <div className="tnum mt-0.5 text-xs whitespace-nowrap text-ink-3">
+                Low {money(Math.min(...pastPrices), query.currency)} · High {money(Math.max(...pastPrices), query.currency)}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="border-line max-lg:border-t max-lg:pt-4 lg:border-l lg:pl-8">
+      <div className="border-line bg-surface-2/70 p-5 max-lg:border-t sm:p-6 lg:border-l">
         <TrackBox
           input={{ query }}
           watch={watch}
@@ -128,13 +128,13 @@ function Results({ result, watch, onRefresh, refreshing }: { result: SearchResul
   const destination = airports[query.destination];
 
   return (
-    <div className={cx('space-y-5 transition-opacity', refreshing && 'opacity-60')}>
+    <div className={cx('space-y-6 transition-opacity', refreshing && 'opacity-60')}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {origin?.city ?? query.origin} <span className="text-ink-3">to</span> {destination?.city ?? query.destination}
+          <h1 className="display text-2xl font-extrabold sm:text-[1.75rem]">
+            <RouteTitle from={origin?.city ?? query.origin} to={destination?.city ?? query.destination} />
           </h1>
-          <p className="mt-0.5 text-[13px] text-ink-3">
+          <p className="mt-1 text-[13px] text-ink-3">
             {tripDates(query)} · {travellers(query)} · {plural(offers.length, 'flight')} from {plural(airlines.length, 'airline')}
           </p>
         </div>
@@ -157,7 +157,7 @@ function Results({ result, watch, onRefresh, refreshing }: { result: SearchResul
                 href={result.externalUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 font-medium text-ink-2 transition-colors hover:bg-surface-2 hover:text-ink"
+                className={buttonClass('ghost', 'sm')}
               >
                 Google Flights
                 <ExternalLink className="size-3.5" aria-hidden />
@@ -177,7 +177,7 @@ function Results({ result, watch, onRefresh, refreshing }: { result: SearchResul
           <DateStrip query={query} provider={result.provider} />
 
           <section aria-label="Flights">
-            <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-3">
+            <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3">
               <Segmented
                 label="Results view"
                 value={tab}
@@ -245,7 +245,7 @@ function Results({ result, watch, onRefresh, refreshing }: { result: SearchResul
                     Loosen the stop or airline filter to see more options.
                   </EmptyState>
                 ) : (
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     {shown.slice(0, limit).map(({ offer, pricing }) => (
                       <OfferCard
                         key={offer.id}
@@ -278,60 +278,79 @@ function Results({ result, watch, onRefresh, refreshing }: { result: SearchResul
 
 function Feature({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-line bg-surface p-4 shadow-card">
-      <div className="mb-2.5 flex size-8 items-center justify-center rounded-lg bg-accent-soft text-accent-strong">{icon}</div>
-      <h3 className="font-semibold">{title}</h3>
-      <p className="mt-1 text-[13px] text-ink-3">{children}</p>
+    <div className="rounded-2xl bg-surface p-5 shadow-card sm:p-6">
+      <div className="mb-4 flex size-10 items-center justify-center rounded-control bg-accent-soft text-accent-strong">{icon}</div>
+      <h3 className="display text-base font-bold">{title}</h3>
+      <p className="mt-1 text-[13px] leading-relaxed text-ink-3">{children}</p>
     </div>
   );
 }
 
-function Welcome({ currency }: { currency: string }) {
-  const samples: [string, string, string, number][] = [
-    ['JFK', 'LHR', 'New York → London', 7],
-    ['SFO', 'NRT', 'San Francisco → Tokyo', 10],
-    ['SIN', 'BKK', 'Singapore → Bangkok', 4],
-    ['LHR', 'BCN', 'London → Barcelona', 4],
-  ];
+const SAMPLES: [string, string, string, number][] = [
+  ['JFK', 'LHR', 'New York → London', 7],
+  ['SFO', 'NRT', 'San Francisco → Tokyo', 10],
+  ['SIN', 'BKK', 'Singapore → Bangkok', 4],
+  ['LHR', 'BCN', 'London → Barcelona', 4],
+];
+
+/** Example searches, shown on the band under the empty search form. */
+function SampleRoutes({ currency }: { currency: string }) {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Feature icon={<CalendarRange className="size-4" />} title="Cheapest dates">
-          Search any dates to see the lowest fare for every day of the coming months, then open a date to compare its flights.
-        </Feature>
-        <Feature icon={<History className="size-4" />} title="Price history and alerts">
-          Track a trip, with or without fixed dates. Every check is recorded, and you are told when a cheap fare shows up.
-        </Feature>
-        <Feature icon={<Scale className="size-4" />} title="Airlines side by side">
-          Compare carriers on total price with your bags, legroom, Wi-Fi, fare rules and emissions.
-        </Feature>
-      </div>
-      <div className="flex flex-wrap items-center gap-2 text-[13px]">
-        <span className="text-ink-3">Try a route, any dates:</span>
-        {samples.map(([from, to, label, nights]) => (
-          <Link
-            key={label}
-            to={flexPath({ origin: from, destination: to, tripDays: nights, windowDays: 180, adults: 1, cabin: 'economy', currency, maxStops: null })}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-2.5 py-1.5 font-medium text-ink-2 shadow-card transition-colors hover:border-line-strong hover:text-ink"
-          >
-            <PlaneTakeoff className="size-3.5 text-ink-3" aria-hidden />
-            {label}
-          </Link>
-        ))}
-      </div>
+    <div className="mt-5 flex flex-wrap items-center gap-2 text-[13px]">
+      <span className="mr-1 text-white/55">Try a route, any dates:</span>
+      {SAMPLES.map(([from, to, label, nights]) => (
+        <Link
+          key={label}
+          to={flexPath({ origin: from, destination: to, tripDays: nights, windowDays: 180, adults: 1, cabin: 'economy', currency, maxStops: null })}
+          className="tap-target inline-flex h-8 items-center gap-1.5 rounded-full bg-white/[0.08] pr-3.5 pl-3 font-semibold text-white/85 ring-1 ring-white/10 transition-colors ring-inset hover:bg-white/[0.15] hover:text-white hover:ring-white/20"
+        >
+          <PlaneTakeoff className="size-3.5 opacity-60" aria-hidden />
+          {label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function Welcome() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-3">
+      <Feature icon={<CalendarRange className="size-5" />} title="Cheapest dates">
+        Search any dates to see the lowest fare for every day of the coming months, then open a date to compare its flights.
+      </Feature>
+      <Feature icon={<History className="size-5" />} title="Price history and alerts">
+        Track a trip, with or without fixed dates. Every check is recorded, and you are told when a cheap fare shows up.
+      </Feature>
+      <Feature icon={<Scale className="size-5" />} title="Airlines side by side">
+        Compare carriers on total price with your bags, legroom, Wi-Fi, fare rules and emissions.
+      </Feature>
+    </div>
+  );
+}
+
+/** A flight path drawn faintly across the right of the landing band. Decoration only. */
+function HeroArt() {
+  return (
+    <div className="absolute top-8 right-[max(1.5rem,calc(50%-35rem))] hidden h-56 w-[30rem] text-white lg:block">
+      <svg viewBox="0 0 480 224" fill="none" className="size-full">
+        <path d="M14 206 C 150 196, 310 132, 444 40" stroke="currentColor" strokeOpacity="0.3" strokeWidth="1.5" strokeDasharray="1 8" strokeLinecap="round" />
+        <circle cx="14" cy="206" r="3.5" fill="currentColor" fillOpacity="0.55" />
+        <circle cx="14" cy="206" r="9" stroke="currentColor" strokeOpacity="0.18" />
+      </svg>
+      <Plane className="absolute top-[18px] left-[438px] size-6 rotate-[11deg] text-white/70" aria-hidden />
     </div>
   );
 }
 
 function ResultsSkeleton() {
   return (
-    <div className="space-y-5" aria-busy aria-label="Searching for flights">
+    <div className="space-y-6" aria-busy aria-label="Searching for flights">
       <Skeleton className="h-12 w-72" />
-      <Skeleton className="h-28" />
       <Skeleton className="h-36" />
-      <div className="space-y-2.5">
+      <Skeleton className="h-40" />
+      <div className="space-y-3">
         {Array.from({ length: 5 }, (_, i) => (
-          <Skeleton key={i} className="h-[5.5rem]" />
+          <Skeleton key={i} className="h-28" />
         ))}
       </div>
     </div>
@@ -379,47 +398,60 @@ export function SearchPage() {
     window.scrollTo(0, 0);
   }, [flexible]);
 
+  const landing = !query && !flex;
+
   return (
-    <div className="space-y-6">
-      {!query && !flex && (
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-[1.75rem]">Find the cheapest dates to fly, then keep watching them.</h1>
-          <p className="mt-1.5 max-w-2xl text-ink-3">See the lowest fare for every day of the coming months, compare airlines on what you will really pay, and get told when a cheap fare appears.</p>
-        </div>
-      )}
+    <>
+      <Band className={landing ? 'pt-10 pb-10 sm:pt-16 sm:pb-14' : 'py-4 sm:py-5'} art={landing ? <HeroArt /> : undefined}>
+        {landing && (
+          <div className="mb-8 max-w-2xl sm:mb-10">
+            <h1 className="display text-[2.25rem] leading-[1.05] font-extrabold sm:text-5xl sm:leading-[1.05]">
+              {/* Two sentences, two lines: the break is set here rather than left to the browser's line balancing. */}
+              Find the cheapest dates to fly. <span className="block text-sky-300">Then keep watching them.</span>
+            </h1>
+            <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-white/70 sm:text-base">
+              See the lowest fare for every day of the coming months, compare airlines on what you will really pay, and get told when a cheap fare appears.
+            </p>
+          </div>
+        )}
 
-      <SearchForm
-        initial={query}
-        initialFlex={flex}
-        busy={search.isFetching && !search.data}
-        onSearch={(q) => navigate(searchPath(q))}
-        onSearchFlex={(f) => navigate(flexPath(f))}
-      />
-
-      {flex ? (
-        <Suspense fallback={<Skeleton className="h-96" />}>
-          <FlexSearch flex={flex} />
-        </Suspense>
-      ) : !query ? (
-        <Welcome currency={prefs.currency} />
-      ) : search.isPending ? (
-        <ResultsSkeleton />
-      ) : search.isError ? (
-        <ErrorNote
-          title="The search did not go through"
-          message={search.error.message}
-          action={
-            <Button size="sm" onClick={() => void search.refetch()}>
-              Try again
-            </Button>
-          }
+        <SearchForm
+          initial={query}
+          initialFlex={flex}
+          busy={search.isFetching && !search.data}
+          onSearch={(q) => navigate(searchPath(q))}
+          onSearchFlex={(f) => navigate(flexPath(f))}
         />
-      ) : (
-        <>
-          {refresh.isError && <ErrorNote title="Could not refresh prices" message={refresh.error.message} />}
-          <Results key={paramString} result={search.data} watch={watch} onRefresh={() => refresh.mutate()} refreshing={refresh.isPending} />
-        </>
-      )}
-    </div>
+
+        {landing && <SampleRoutes currency={prefs.currency} />}
+      </Band>
+
+      <PageBody>
+        {flex ? (
+          <Suspense fallback={<Skeleton className="h-96" />}>
+            <FlexSearch flex={flex} />
+          </Suspense>
+        ) : !query ? (
+          <Welcome />
+        ) : search.isPending ? (
+          <ResultsSkeleton />
+        ) : search.isError ? (
+          <ErrorNote
+            title="The search did not go through"
+            message={search.error.message}
+            action={
+              <Button size="sm" onClick={() => void search.refetch()}>
+                Try again
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            {refresh.isError && <ErrorNote title="Could not refresh prices" message={refresh.error.message} />}
+            <Results key={paramString} result={search.data} watch={watch} onRefresh={() => refresh.mutate()} refreshing={refresh.isPending} />
+          </>
+        )}
+      </PageBody>
+    </>
   );
 }

@@ -1,42 +1,70 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter';
+@import '@fontsource-variable/manrope';
 @import '@fontsource-variable/jetbrains-mono';
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 /*
  * Design tokens. Components are written against roles (surface, ink, line,
- * series-n ...) so light and dark swap in one place. Chart colours are the
- * validated categorical palette: same eight hues, stepped separately per mode.
+ * series-n ...) so light and dark swap in one place.
+ *
+ * The look: a deep navy band across the top of every page (navigation, page
+ * heading, search form) with white cards on a cool pale page below it. The
+ * band keeps the same navy in both themes, so anything on it uses fixed white
+ * text rather than the ink tokens.
+ *
+ * Chart colours are a validated categorical palette: the same eight hues,
+ * stepped separately per mode and checked against each mode's surface.
+ * Series 1 is the brand blue, so single-series charts match the buttons.
+ *
+ * Shape. A control's corner radius follows its height (32px: 8, 40px: 10,
+ * 48px: 12, 56px: 16); cards are 16; toggles and chips are full pills. A
+ * rounded box inside another keeps the corners concentric: outer radius =
+ * inner radius + the padding between them (the search form is 16 + 16 = 32).
+ * Where the padding is larger than the outer radius, the inner box just uses
+ * a smaller radius than its parent.
+ *
+ * Depth. Raised surfaces get their edge from the shadow itself (a 1px ring at
+ * low opacity), not from a solid border, so the edge stays crisp on any
+ * background. Every shadow is layered (tight contact shadow + soft ambient
+ * one), falls straight down, and is tinted with the navy ink rather than
+ * black. Solid lines are kept for dividers and flat inset boxes.
  */
 :root {
   color-scheme: light;
-  --page: #f6f6f3;
-  --surface: #fcfcfb;
-  --surface-2: #f1f0ec;
-  --surface-3: #e7e6e0;
-  --line: #e1e0d9;
-  --line-strong: #c3c2b7;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --ink-3: #807e78;
+  --page: #f1f3f8;
+  --surface: #ffffff;
+  --surface-2: #f3f5fa;
+  --surface-3: #e6eaf3;
+  --raised: #ffffff;
+  --line: #e3e7f0;
+  --line-strong: #c7cedc;
+  --ink: #0c1326;
+  --ink-2: #414a5f;
+  --ink-3: #626b81;
 
-  --accent: #2a78d6;
-  --accent-strong: #1c5cab;
-  --accent-soft: #e6f0fc;
+  --band: #0a1128;
+  --band-glow-1: rgb(43 102 246 / 0.42);
+  --band-glow-2: rgb(56 189 248 / 0.16);
+
+  --accent: #2b66f6;
+  --accent-hover: #1f57e2;
+  --accent-strong: #1d4fd0;
+  --accent-soft: #e9f0ff;
   --on-accent: #ffffff;
 
   --good: #0ca30c;
-  --good-ink: #006300;
-  --good-soft: #e4f3e2;
+  --good-ink: #046c04;
+  --good-soft: #e2f5e3;
   --warn: #fab219;
   --warn-ink: #7a4f00;
-  --warn-soft: #fcf0d2;
+  --warn-soft: #fdf1d3;
   --bad: #d03b3b;
   --bad-ink: #a82a2a;
-  --bad-soft: #fae6e5;
+  --bad-soft: #fbe7e6;
 
-  --series-1: #2a78d6;
+  --series-1: #2b66f6;
   --series-2: #eb6834;
   --series-3: #1baf7a;
   --series-4: #eda100;
@@ -44,33 +72,44 @@
   --series-6: #008300;
   --series-7: #6250d6;
   --series-8: #e34948;
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
+  --grid: #e9ecf3;
+  --axis: #c7cedc;
 
-  --shadow-card: 0 1px 2px rgb(11 11 11 / 0.04), 0 1px 1px rgb(11 11 11 / 0.03);
-  --shadow-pop: 0 12px 32px -8px rgb(11 11 11 / 0.18), 0 2px 6px rgb(11 11 11 / 0.08);
+  /* Elevation, lowest to highest. Each: edge ring, contact shadow, ambient shadow. */
+  --shadow-card: 0 0 0 1px rgb(12 19 38 / 0.07), 0 1px 2px -1px rgb(12 19 38 / 0.08), 0 4px 10px -4px rgb(12 19 38 / 0.07);
+  --shadow-lift: 0 0 0 1px rgb(12 19 38 / 0.09), 0 2px 4px -2px rgb(12 19 38 / 0.1), 0 14px 28px -10px rgb(12 19 38 / 0.18);
+  --shadow-pop: 0 0 0 1px rgb(12 19 38 / 0.08), 0 4px 8px -4px rgb(12 19 38 / 0.12), 0 22px 44px -12px rgb(12 19 38 / 0.26);
+  --shadow-form: 0 2px 4px -1px rgb(2 6 20 / 0.3), 0 28px 56px -20px rgb(2 6 20 / 0.6);
+  --shadow-control: 0 1px 2px rgb(12 19 38 / 0.06);
+  --shadow-btn: inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 0 0 1px rgb(12 19 38 / 0.1), 0 1px 2px rgb(12 19 38 / 0.2), 0 6px 14px -6px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --page: #0d0d0d;
-  --surface: #1a1a19;
-  --surface-2: #232321;
-  --surface-3: #2c2c2a;
-  --line: #2c2c2a;
-  --line-strong: #44443f;
-  --ink: #f0efec;
-  --ink-2: #c3c2b7;
-  --ink-3: #96948d;
+  --page: #070b17;
+  --surface: #0f1629;
+  --surface-2: #161f38;
+  --surface-3: #202b49;
+  --raised: #2b3759;
+  --line: #1d2742;
+  --line-strong: #34405f;
+  --ink: #eef2fc;
+  --ink-2: #b9c2d8;
+  --ink-3: #8a94ad;
 
-  --accent: #3987e5;
-  --accent-strong: #86b6ef;
-  --accent-soft: #15273f;
+  --band: #0a1128;
+  --band-glow-1: rgb(43 102 246 / 0.34);
+  --band-glow-2: rgb(56 189 248 / 0.1);
+
+  --accent: #3568ee;
+  --accent-hover: #2c5ce0;
+  --accent-strong: #8fb0ff;
+  --accent-soft: #15234b;
   --on-accent: #ffffff;
 
   --good: #0ca30c;
   --good-ink: #4cc24a;
-  --good-soft: #11260f;
+  --good-soft: #0f2a14;
   --warn: #fab219;
   --warn-ink: #fab219;
   --warn-soft: #2e2408;
@@ -78,7 +117,7 @@
   --bad-ink: #ee7c7b;
   --bad-soft: #331615;
 
-  --series-1: #3987e5;
+  --series-1: #4a7dfa;
   --series-2: #d95926;
   --series-3: #199e70;
   --series-4: #c98500;
@@ -86,27 +125,36 @@
   --series-6: #008300;
   --series-7: #9085e9;
   --series-8: #e66767;
-  --grid: #2c2c2a;
-  --axis: #383835;
+  --grid: #1d2742;
+  --axis: #34405f;
 
-  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4);
-  --shadow-pop: 0 16px 40px -8px rgb(0 0 0 / 0.7), 0 2px 8px rgb(0 0 0 / 0.5);
+  /* Shadows barely show on a dark page, so the edge ring does the work here. */
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-lift: 0 0 0 1px rgb(255 255 255 / 0.14), 0 2px 4px -2px rgb(0 0 0 / 0.5), 0 14px 28px -10px rgb(0 0 0 / 0.7);
+  --shadow-pop: 0 0 0 1px rgb(255 255 255 / 0.12), 0 4px 8px -4px rgb(0 0 0 / 0.5), 0 22px 44px -12px rgb(0 0 0 / 0.8);
+  --shadow-form: 0 0 0 1px rgb(255 255 255 / 0.08), 0 2px 4px -1px rgb(0 0 0 / 0.4), 0 28px 56px -20px rgb(0 0 0 / 0.8);
+  --shadow-control: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-btn: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 1px rgb(0 0 0 / 0.12), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 14px -6px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
 @theme inline {
   --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Manrope Variable', 'Inter Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --color-page: var(--page);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
+  --color-raised: var(--raised);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
+  --color-band: var(--band);
   --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-on-accent: var(--on-accent);
@@ -121,19 +169,63 @@
   --color-bad-soft: var(--bad-soft);
 
   --shadow-card: var(--shadow-card);
+  --shadow-lift: var(--shadow-lift);
   --shadow-pop: var(--shadow-pop);
+  --shadow-form: var(--shadow-form);
+  --shadow-control: var(--shadow-control);
+  --shadow-btn: var(--shadow-btn);
+
+  /* The 40px control radius; the other steps are Tailwind's own (lg 8, xl 12, 2xl 16, 4xl 32). */
+  --radius-control: 0.625rem;
 }
 
 @layer base {
   html {
     background: var(--page);
     scrollbar-gutter: stable;
+    /* Phones: no font inflation in landscape, no grey flash on tap. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-page font-sans text-ink antialiased;
     font-size: 14px;
     line-height: 1.5;
     font-feature-settings: 'cv11', 'ss03';
+    text-rendering: optimizeLegibility;
+  }
+  /* Headings break into lines of similar length; body text avoids a lone last word. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    text-wrap: balance;
+  }
+  p,
+  li,
+  dd,
+  figcaption {
+    text-wrap: pretty;
+  }
+  /* No 300ms double-tap delay on anything pressable. */
+  a,
+  button,
+  input,
+  select,
+  label,
+  summary,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+  /* Native dropdown lists take the theme's colours (Windows draws them white otherwise). */
+  option {
+    background-color: var(--surface);
+    color: var(--ink);
+  }
+  /* In-page jumps land below the sticky navigation bar. */
+  [id] {
+    scroll-margin-top: 5rem;
   }
   ::selection {
     background: color-mix(in srgb, var(--accent) 28%, transparent);
@@ -142,6 +234,13 @@
     outline: 2px solid var(--accent);
     outline-offset: 2px;
     border-radius: 6px;
+  }
+  /* On the navy band the blue ring is hard to see; cards placed on it opt back out. */
+  .on-band :focus-visible {
+    outline-color: rgb(255 255 255 / 0.9);
+  }
+  .on-band .off-band :focus-visible {
+    outline-color: var(--accent);
   }
   button:not(:disabled),
   [role='button'],
@@ -153,7 +252,7 @@
   /* `color-scheme` already gives the icon the right ink for each theme. */
   input[type='date']::-webkit-calendar-picker-indicator {
     cursor: pointer;
-    opacity: 0.6;
+    opacity: 0.55;
   }
   input[type='number']::-webkit-inner-spin-button,
   input[type='number']::-webkit-outer-spin-button {
@@ -173,6 +272,63 @@
   font-family: var(--font-mono);
   font-feature-settings: 'zero';
   letter-spacing: -0.01em;
+}
+
+/* The small capital label above a headline figure or a form value. One definition, so they all match. */
+@utility eyebrow {
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/*
+ * Touch screens: a small control keeps its size but takes taps across a 44px-tall
+ * area. Vertical only, so neighbours in a row do not steal each other's taps.
+ */
+@utility tap-target {
+  @media (pointer: coarse) {
+    position: relative;
+    &::after {
+      content: '';
+      position: absolute;
+      inset: calc((100% - 2.75rem) / 2) 0;
+    }
+  }
+}
+
+/* Headline numbers and headings: the display face, set tight. */
+@utility display {
+  font-family: var(--font-display);
+  font-feature-settings: normal;
+  letter-spacing: -0.025em;
+}
+
+/* Soft light behind the band's content. Kept away from the top edge so it meets the flat navigation bar without a seam. */
+.band-art {
+  background:
+    radial-gradient(46rem 22rem at 82% 78%, var(--band-glow-1), transparent 68%),
+    radial-gradient(34rem 18rem at 6% 118%, var(--band-glow-2), transparent 70%);
+}
+/* A trace of grain over the glows: long dark gradients otherwise show as visible steps on many screens. */
+.band-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* Grey noise blended in soft light lightens and darkens equally, so the band's colour does not shift. */
+  opacity: 0.35;
+  mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Changing theme repaints everything at once; nothing should animate its way there. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
 }
 
 /* Recharts draws focus outlines on its SVG wrapper; the crosshair already shows focus. */
@@ -195,11 +351,14 @@
     background-position: -200% 0;
   }
 }
-.skeleton {
-  border-radius: 8px;
-  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
+/* In the components layer so a radius utility on the element can override the default. */
+@layer components {
+  .skeleton {
+    border-radius: 16px;
+    background: linear-gradient(90deg, var(--surface-3) 25%, var(--surface-2) 37%, var(--surface-3) 63%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .fade-up,

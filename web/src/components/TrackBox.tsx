@@ -42,15 +42,17 @@ export function TrackBox({
   if (watch) {
     return (
       <div className="flex h-full flex-col justify-center gap-2">
-        <p className="flex items-center gap-1.5 text-sm font-medium">
-          <BellRing className="size-4 text-accent" aria-hidden />
+        <p className="display flex items-center gap-2 text-base font-bold">
+          <span className="flex size-7 items-center justify-center rounded-full bg-accent-soft text-accent-strong">
+            <BellRing className="size-4" aria-hidden />
+          </span>
           You are tracking this trip
         </p>
         <p className="text-[13px] text-ink-3">
           {watch.lastCheckedAt ? `Last checked ${relativeTime(watch.lastCheckedAt)}.` : 'First check pending.'}
           {watch.targetPrice != null && ` Target ${money(watch.targetPrice, watch.query.currency)}.`}
         </p>
-        <Link to={`/tracked/${watch.id}`} className="text-[13px] font-medium text-accent-strong hover:underline">
+        <Link to={`/tracked/${watch.id}`} className="text-[13px] font-semibold text-accent-strong hover:underline">
           View price history →
         </Link>
       </div>
@@ -64,9 +66,9 @@ export function TrackBox({
   };
 
   return (
-    <form onSubmit={submit} className="flex h-full flex-col justify-center gap-2.5">
+    <form onSubmit={submit} className="flex h-full flex-col justify-center gap-3">
       <div>
-        <p className="text-sm font-medium">{title}</p>
+        <p className="display text-base font-bold">{title}</p>
         <p className="mt-0.5 text-[13px] text-ink-3">{blurb}</p>
       </div>
       <div className="flex gap-2">
@@ -81,16 +83,16 @@ export function TrackBox({
             onChange={(e) => setTarget(e.target.value)}
             placeholder="Target price"
             title={targetHint ?? 'Optional'}
-            className={cx(inputClass, 'tnum h-9 pr-12')}
+            className={cx(inputClass, 'tnum pr-12')}
           />
           <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-ink-3">{currency}</span>
         </label>
-        <Button type="submit" variant="primary" loading={track.isPending}>
+        <Button type="submit" variant="primary" loading={track.isPending} className="sm:pl-3.5">
           {!track.isPending && <BellPlus className="size-4" aria-hidden />}
           Track
         </Button>
       </div>
-      {track.error && <p className="text-xs font-medium text-bad-ink">{track.error.message}</p>}
+      {track.error && <p className="text-xs font-semibold text-bad-ink">{track.error.message}</p>}
     </form>
   );
 }

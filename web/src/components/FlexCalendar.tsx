@@ -36,10 +36,10 @@ function ChartTooltip({ active, payload, currency, lowest }: { active?: boolean;
   if (!active || !row) return null;
   const over = row.price - lowest;
   return (
-    <div className="rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-pop">
+    <div className="rounded-xl bg-surface px-3.5 py-2.5 text-xs shadow-pop">
       <div className="mb-1 text-ink-3">{flexDates(row.day)}</div>
       <div className="flex items-baseline gap-2">
-        <span className="tnum text-[13px] font-semibold text-ink">{money(row.price, currency)}</span>
+        <span className="tnum text-sm font-bold text-ink">{money(row.price, currency)}</span>
         <span className="text-ink-2">{over <= 0 ? 'the cheapest date' : `${money(over, currency)} above the cheapest`}</span>
       </div>
       <div className="mt-1.5 text-ink-3">Click to see the flights</div>
@@ -131,7 +131,7 @@ export function FareByDate({
       </div>
 
       {view === 'table' ? (
-        <div className="max-h-[22rem] overflow-auto rounded-lg border border-line">
+        <div className="max-h-[22rem] overflow-auto rounded-xl border border-line">
           <table className="w-full border-collapse text-[13px]">
             <thead className="sticky top-0 bg-surface-2 text-left text-xs text-ink-3">
               <tr>
@@ -155,7 +155,7 @@ export function FareByDate({
               {tableRows.map((row) => (
                 <tr key={row.t} className="border-t border-line">
                   <td className="px-3 py-1.5 whitespace-nowrap">
-                    <Link to={dayPath(trip, row.day)} className="font-medium text-accent-strong hover:underline">
+                    <Link to={dayPath(trip, row.day)} className="font-semibold text-accent-strong hover:underline">
                       {day(row.day.departDate)}
                     </Link>
                   </td>
@@ -168,7 +168,7 @@ export function FareByDate({
           </table>
         </div>
       ) : rows.length < 2 ? (
-        <div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed border-line-strong/70 px-6 text-center text-[13px] text-ink-3">
+        <div className="flex h-[300px] items-center justify-center rounded-xl border border-dashed border-line-strong px-6 text-center text-[13px] text-ink-3">
           Not enough dates with fares to draw a chart.
         </div>
       ) : (
@@ -182,6 +182,12 @@ export function FareByDate({
                 if (picked) navigate(dayPath(trip, picked.day));
               }}
             >
+              <defs>
+                <linearGradient id="fare-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={COLOR} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={COLOR} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
               <CartesianGrid vertical={false} stroke="var(--grid)" />
               <XAxis
                 dataKey="t"
@@ -211,7 +217,7 @@ export function FareByDate({
                 cursor={{ stroke: 'var(--line-strong)', strokeWidth: 1 }}
                 content={<ChartTooltip currency={currency} lowest={lowest} />}
               />
-              <Area dataKey="price" type="linear" stroke="none" fill={COLOR} fillOpacity={0.1} isAnimationActive={false} activeDot={false} baseValue={yDomain[0]} />
+              <Area dataKey="price" type="linear" stroke="none" fill="url(#fare-fill)" fillOpacity={1} isAnimationActive={false} activeDot={false} baseValue={yDomain[0]} />
               <Line
                 dataKey="price"
                 name="Lowest fare"
@@ -254,7 +260,7 @@ export function MonthGrid({ months, days, trip }: { months: readonly FlexMonth[]
   const lowest = Math.min(...days.map((d) => d.price));
 
   return (
-    <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {months.map((m) => {
         const inMonth = days.filter((d) => d.departDate.startsWith(m.month));
         const isLowest = m.cheapest.price === lowest;
@@ -264,17 +270,18 @@ export function MonthGrid({ months, days, trip }: { months: readonly FlexMonth[]
               to={dayPath(trip, m.cheapest)}
               title={`See the flights for ${flexDates(m.cheapest)}`}
               className={cx(
-                'group flex h-full flex-col rounded-xl border bg-surface p-4 shadow-card transition-colors',
-                isLowest ? 'border-accent/60 hover:border-accent' : 'border-line hover:border-line-strong',
+                'group flex h-full flex-col rounded-2xl bg-surface p-4 shadow-card transition-[box-shadow,transform] hover:shadow-lift motion-safe:hover:-translate-y-0.5',
+                // The cheapest month swaps the neutral edge for a green one.
+                isLowest && 'ring-1 ring-good/60',
               )}
             >
               <div className="flex items-center justify-between gap-2">
-                <h3 className="text-[13px] font-medium text-ink-2">{monthLabel(m.month)}</h3>
-                {isLowest && <Badge tone="accent">Cheapest</Badge>}
+                <h3 className="text-[13px] font-semibold text-ink-2">{monthLabel(m.month)}</h3>
+                {isLowest && <Badge tone="good">Cheapest</Badge>}
               </div>
               <div className="mt-2 flex items-end justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-2xl leading-none font-semibold tracking-tight">{money(m.cheapest.price, currency)}</div>
+                  <div className="display text-2xl leading-none font-extrabold">{money(m.cheapest.price, currency)}</div>
                   <div className="mt-1.5 truncate text-xs text-ink-3">
                     {shortDay(m.cheapest.departDate)}
                     {m.cheapest.returnDate && ` – ${shortDay(m.cheapest.returnDate)}`}
@@ -290,7 +297,7 @@ export function MonthGrid({ months, days, trip }: { months: readonly FlexMonth[]
               </div>
               <div className="mt-3 flex items-center justify-between gap-2 border-t border-line pt-2.5 text-xs text-ink-3">
                 {m.change != null ? <Delta amount={m.change} currency={currency} suffix="since last scan" /> : <span>Typical {money(m.median, currency)}</span>}
-                <ArrowRight className="size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
+                <ArrowRight className="size-3.5 shrink-0 transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-accent-strong" aria-hidden />
               </div>
             </Link>
           </li>
@@ -306,15 +313,15 @@ export function CheapestDates({ days, trip, limit = 8 }: { days: readonly FlexDa
   const top = useMemo(() => [...days].sort((a, b) => a.price - b.price || a.departDate.localeCompare(b.departDate)).slice(0, limit), [days, limit]);
   const lowest = top[0]?.price ?? 0;
   return (
-    <ol className="divide-y divide-line rounded-xl border border-line bg-surface shadow-card">
+    <ol className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-card">
       {top.map((d, i) => (
         <li key={d.departDate}>
-          <Link to={dayPath(trip, d)} className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-2/60">
-            <span className="tnum w-5 shrink-0 text-xs text-ink-3">{i + 1}</span>
-            <span className="min-w-0 flex-1 truncate text-[13px] font-medium">{flexDates(d)}</span>
+          <Link to={dayPath(trip, d)} className="group flex items-center gap-3.5 px-4 py-3 transition-colors hover:bg-surface-2 sm:px-5">
+            <span className={cx('tnum flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold', i === 0 ? 'bg-good-soft text-good-ink' : 'bg-ink/[0.06] text-ink-3')}>{i + 1}</span>
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold">{flexDates(d)}</span>
             <span className="tnum text-xs text-ink-3">{d.price === lowest ? '' : `+${money(d.price - lowest, currency)}`}</span>
-            <span className="tnum w-16 text-right text-sm font-semibold">{money(d.price, currency)}</span>
-            <ArrowRight className="size-3.5 shrink-0 text-ink-3" aria-hidden />
+            <span className="tnum w-20 text-right text-[15px] font-bold">{money(d.price, currency)}</span>
+            <ArrowRight className="size-4 shrink-0 text-ink-3 transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-accent-strong" aria-hidden />
           </Link>
         </li>
       ))}

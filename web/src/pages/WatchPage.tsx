@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, CircleCheck, CircleHelp, ExternalLink, Hourglass, Pause, Play, RefreshCw, Scale, Search, Trash2 } from 'lucide-react';
+import { ArrowRight, CircleCheck, CircleHelp, ExternalLink, Hourglass, Pause, Play, RefreshCw, Scale, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { flexScanCost, type UpdateWatchInput, type Verdict, type WatchCalendar, type WatchDetail, type WatchSummary } from '@shared/types';
 import { AirlineCompare } from '@/components/AirlineCompare';
 import { BagPrefsControl } from '@/components/Bags';
 import { dayPath, FareByDate, MonthGrid } from '@/components/FlexCalendar';
+import { PageBody, PageHeader } from '@/components/Layout';
 import { OfferCard, priceOffer } from '@/components/OfferCard';
 import { PriceHistory } from '@/components/PriceHistory';
 import { Delta, LevelBadge } from '@/components/PriceLevel';
-import { Badge, Button, Card, cx, ErrorNote, inputClass, SectionTitle, Segmented, Skeleton } from '@/components/ui';
+import { Badge, Button, buttonClass, Card, cx, ErrorNote, inputClass, RouteTitle, SectionTitle, Segmented, Skeleton } from '@/components/ui';
 import { ApiRequestError, api, keys } from '@/lib/api';
 import { dayWithYear, flexDates, money, monthLabel, plural, relativeTime, timestamp, travellers, tripDates, tripLengthLabel, windowLabel } from '@/lib/format';
 import { usePrefs } from '@/lib/prefs';
@@ -18,24 +19,27 @@ import { useTitle } from '@/lib/useTitle';
 import { AlertRow } from './AlertsPage';
 
 /** Header actions shrink a step on phones so all four stay on one row. */
-const COMPACT_ON_PHONES = 'max-sm:h-8 max-sm:px-2.5 max-sm:text-[13px]';
+const COMPACT_ON_PHONES = 'max-sm:h-8 max-sm:rounded-lg max-sm:px-2.5 max-sm:text-[13px]';
+/** With a leading icon: slightly less padding on that side, so the label looks centred. */
+const WITH_ICON = `${COMPACT_ON_PHONES} sm:pl-3.5`;
 
 const VERDICTS: Record<Verdict['kind'], { Icon: typeof CircleCheck; box: string; icon: string }> = {
-  buy: { Icon: CircleCheck, box: 'border-good/30 bg-good-soft', icon: 'text-good-ink' },
-  fair: { Icon: Scale, box: 'border-line bg-surface', icon: 'text-ink-3' },
-  wait: { Icon: Hourglass, box: 'border-warn/40 bg-warn-soft', icon: 'text-warn-ink' },
-  unknown: { Icon: CircleHelp, box: 'border-line bg-surface', icon: 'text-ink-3' },
+  // Tinted verdicts are flat notes with a coloured edge; neutral ones are ordinary cards.
+  buy: { Icon: CircleCheck, box: 'bg-good-soft ring-1 ring-good/30', icon: 'text-good-ink' },
+  fair: { Icon: Scale, box: 'bg-surface shadow-card', icon: 'text-ink-3' },
+  wait: { Icon: Hourglass, box: 'bg-warn-soft ring-1 ring-warn/40', icon: 'text-warn-ink' },
+  unknown: { Icon: CircleHelp, box: 'bg-surface shadow-card', icon: 'text-ink-3' },
 };
 
 function VerdictCard({ verdict }: { verdict: Verdict }) {
   const { Icon, box, icon } = VERDICTS[verdict.kind];
   return (
-    <div className={cx('rounded-xl border p-4 shadow-card', box)}>
-      <div className="flex items-center gap-2">
-        <Icon className={cx('size-5', icon)} aria-hidden />
-        <h2 className="text-[15px] font-semibold tracking-tight">{verdict.headline}</h2>
+    <div className={cx('rounded-2xl p-5', box)}>
+      <div className="flex items-center gap-2.5">
+        <Icon className={cx('size-5 shrink-0', icon)} aria-hidden />
+        <h2 className="display text-base leading-snug font-bold">{verdict.headline}</h2>
       </div>
-      <ul className="mt-2 space-y-1 text-[13px] text-ink-2">
+      <ul className="mt-3 space-y-1.5 text-[13px] text-ink-2">
         {verdict.reasons.map((reason) => (
           <li key={reason} className="flex gap-2">
             <span className="mt-[0.55em] size-1 shrink-0 rounded-full bg-ink-3" aria-hidden />
@@ -43,16 +47,16 @@ function VerdictCard({ verdict }: { verdict: Verdict }) {
           </li>
         ))}
       </ul>
-      {verdict.kind !== 'unknown' && <p className="mt-2.5 text-xs text-ink-3">A rule of thumb from the price history, not a forecast.</p>}
+      {verdict.kind !== 'unknown' && <p className="mt-3 text-xs text-ink-3">A rule of thumb from the price history, not a forecast.</p>}
     </div>
   );
 }
 
 function Tile({ label, value, sub }: { label: string; value: string; sub?: string | null }) {
   return (
-    <div className="rounded-xl border border-line bg-surface px-4 py-3 shadow-card">
-      <div className="text-xs text-ink-3">{label}</div>
-      <div className="mt-1 text-xl leading-tight font-semibold tracking-tight">{value}</div>
+    <div className="rounded-2xl bg-surface px-5 py-4 shadow-card">
+      <div className="text-xs font-medium text-ink-3">{label}</div>
+      <div className="display mt-1.5 text-2xl leading-tight font-extrabold">{value}</div>
       <div className="mt-0.5 h-4 truncate text-xs text-ink-3">{sub}</div>
     </div>
   );
@@ -87,10 +91,10 @@ function TrackingSettings({
   };
 
   return (
-    <Card className="p-4">
-      <h2 className="text-[15px] font-semibold tracking-tight">Tracking</h2>
+    <Card className="p-5">
+      <h2 className="display text-base font-bold">Tracking</h2>
       <form onSubmit={submit} className="mt-3">
-        <label htmlFor="target-price" className="mb-1 block text-xs font-medium text-ink-3">
+        <label htmlFor="target-price" className="mb-1.5 block text-xs font-semibold text-ink-3">
           Alert me at or below
         </label>
         <div className="flex gap-2">
@@ -105,7 +109,7 @@ function TrackingSettings({
               onChange={(e) => setTarget(e.target.value)}
               placeholder="No target"
               aria-invalid={!valid}
-              className={cx(inputClass, 'tnum h-9 pr-12')}
+              className={cx(inputClass, 'tnum pr-12')}
             />
             <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-ink-3">{watch.query.currency}</span>
           </div>
@@ -116,7 +120,7 @@ function TrackingSettings({
       </form>
 
       <div className="mt-4">
-        <div className="mb-1 text-xs font-medium text-ink-3">Check every</div>
+        <div className="mb-1.5 text-xs font-semibold text-ink-3">Check every</div>
         <Segmented
           label="Check interval"
           size="sm"
@@ -211,70 +215,69 @@ function Header({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { query } = watch;
   return (
-    <>
-      <div>
-        <Link to="/tracked" className="inline-flex items-center gap-1 text-[13px] font-medium text-ink-3 hover:text-ink">
-          <ArrowLeft className="size-3.5" aria-hidden />
-          Tracked trips
-        </Link>
-        <div className="mt-2 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-          <div className="min-w-0">
-            <h1 className="flex flex-wrap items-center gap-x-2 text-2xl font-semibold tracking-tight">
-              {watch.originAirport?.city ?? query.origin}
-              <ArrowRight className="size-5 text-ink-3" aria-label="to" />
-              {watch.destinationAirport?.city ?? query.destination}
-            </h1>
-            <p className="mt-1 text-[13px] text-ink-3">
-              <span className="code-face">
-                {query.origin}–{query.destination}
-              </span>{' '}
-              · {subtitle} · {travellers(query)}
-              {query.maxStops != null && ` · ${query.maxStops === 0 ? 'nonstop only' : `up to ${plural(query.maxStops, 'stop')}`}`}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => check.mutate()}
-              loading={check.isPending}
-              disabled={watch.expired}
-              className={COMPACT_ON_PHONES}
-              title={costPerCheck > 0 ? `Uses ${plural(costPerCheck, 'search', 'searches')}` : undefined}
-            >
-              {!check.isPending && <RefreshCw className="size-4" aria-hidden />}
-              {checkLabel}
+    <PageHeader
+      back={{ to: '/tracked', label: 'Tracked trips' }}
+      title={<RouteTitle from={watch.originAirport?.city ?? query.origin} to={watch.destinationAirport?.city ?? query.destination} />}
+      subtitle={
+        <>
+          <span className="code-face">
+            {query.origin}–{query.destination}
+          </span>{' '}
+          · {subtitle} · {travellers(query)}
+          {query.maxStops != null && ` · ${query.maxStops === 0 ? 'nonstop only' : `up to ${plural(query.maxStops, 'stop')}`}`}
+        </>
+      }
+      action={
+        <>
+          <Button
+            variant="glass"
+            onClick={() => check.mutate()}
+            loading={check.isPending}
+            disabled={watch.expired}
+            className={WITH_ICON}
+            title={costPerCheck > 0 ? `Uses ${plural(costPerCheck, 'search', 'searches')}` : undefined}
+          >
+            {!check.isPending && <RefreshCw className="size-4" aria-hidden />}
+            {checkLabel}
+          </Button>
+          {!watch.expired && (
+            <Button variant="glass" onClick={() => update.mutate({ active: !watch.active })} disabled={update.isPending} className={WITH_ICON}>
+              {watch.active ? <Pause className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
+              {watch.active ? 'Pause' : 'Resume'}
             </Button>
-            {!watch.expired && (
-              <Button onClick={() => update.mutate({ active: !watch.active })} disabled={update.isPending} className={COMPACT_ON_PHONES}>
-                {watch.active ? <Pause className="size-4" aria-hidden /> : <Play className="size-4" aria-hidden />}
-                {watch.active ? 'Pause' : 'Resume'}
+          )}
+          <Link to={searchTo} className={buttonClass('glass', 'md', WITH_ICON)}>
+            <Search className="size-4" aria-hidden />
+            Search
+          </Link>
+          {confirmDelete ? (
+            // A card on the band, so it follows the theme like the search form does.
+            // 12px corners around 8px buttons with 4px of padding.
+            <span className="off-band inline-flex items-center gap-1.5 rounded-xl bg-surface py-1 pr-1 pl-3 text-[13px] font-semibold text-bad-ink shadow-card">
+              Delete this trip and its history?
+              <Button size="sm" variant="destroy" onClick={() => remove.mutate()} loading={remove.isPending}>
+                Delete
               </Button>
-            )}
-            <Link
-              to={searchTo}
-              className={cx('inline-flex h-9 items-center gap-1.5 rounded-lg border border-line-strong/70 bg-surface px-3.5 text-sm font-medium transition-colors hover:bg-surface-2', COMPACT_ON_PHONES)}
-            >
-              <Search className="size-4" aria-hidden />
-              Search
-            </Link>
-            {confirmDelete ? (
-              <span className="inline-flex items-center gap-1.5 rounded-lg border border-bad/40 bg-bad-soft py-0.5 pr-0.5 pl-3 text-[13px] text-bad-ink">
-                Delete this trip and its history?
-                <Button size="sm" variant="danger" onClick={() => remove.mutate()} loading={remove.isPending}>
-                  Delete
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(false)}>
-                  Cancel
-                </Button>
-              </span>
-            ) : (
-              <Button variant="ghost" aria-label="Stop tracking and delete" title="Stop tracking and delete" onClick={() => setConfirmDelete(true)} className="px-2.5">
-                <Trash2 className="size-4" aria-hidden />
+              <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(false)}>
+                Cancel
               </Button>
-            )}
-          </div>
-        </div>
-      </div>
+            </span>
+          ) : (
+            <Button variant="glass" aria-label="Stop tracking and delete" title="Stop tracking and delete" onClick={() => setConfirmDelete(true)} className={cx('sm:px-3', COMPACT_ON_PHONES)}>
+              <Trash2 className="size-4" aria-hidden />
+            </Button>
+          )}
+        </>
+      }
+    />
+  );
+}
 
+/** What went wrong with the last action or scheduled check, if anything. */
+function ActionNotes({ watch, actions }: { watch: WatchSummary; actions: WatchActions }) {
+  const { check, update, remove } = actions;
+  return (
+    <>
       {(check.error || update.error || remove.error) && (
         <ErrorNote title="That did not work" message={(check.error ?? update.error ?? remove.error)?.message ?? ''} />
       )}
@@ -302,7 +305,7 @@ function StatTiles({ detail }: { detail: WatchDetail }) {
   const { currency } = detail.watch.query;
   const fmt = (n: number | null) => (n == null ? '—' : money(n, currency));
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       <Tile label="Lowest seen" value={fmt(stats.lowest)} sub={stats.lowestAt ? `on ${dayWithYear(stats.lowestAt)}` : null} />
       <Tile label="Average" value={fmt(stats.average)} sub={stats.current != null && stats.average != null && stats.current !== stats.average ? `now ${stats.current < stats.average ? money(stats.average - stats.current, currency) + ' below' : money(stats.current - stats.average, currency) + ' above'}` : null} />
       <Tile label="Highest seen" value={fmt(stats.highest)} sub={stats.spanDays > 0 ? `over ${plural(stats.spanDays, 'day')}` : null} />
@@ -332,19 +335,21 @@ function Detail({ detail }: { detail: WatchDetail }) {
   );
 
   return (
-    <div className="space-y-6">
+    <>
       <Header watch={watch} subtitle={tripDates(query)} actions={actions} checkLabel="Check now" costPerCheck={detail.provider.costPerSearch} searchTo={searchPath(query)} />
+      <PageBody>
+      <ActionNotes watch={watch} actions={actions} />
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_19rem]">
-        <Card className="flex flex-col justify-between p-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_19rem]">
+        <Card className="flex flex-col justify-between p-5">
           <div>
-            <div className="flex items-center gap-2 text-xs text-ink-3">
+            <div className="eyebrow flex items-center gap-2">
               Lowest fare now
               {watch.level && !watch.expired && <LevelBadge level={watch.level} />}
               {!watch.active && !watch.expired && <Badge>Paused</Badge>}
               {watch.expired && <Badge>Departed</Badge>}
             </div>
-            <div className="mt-1.5 text-[3rem] leading-none font-semibold tracking-tight">{fmt(stats.current)}</div>
+            <div className="display mt-2 text-[3.25rem] leading-none font-extrabold">{fmt(stats.current)}</div>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
               <Delta amount={stats.change24h} currency={query.currency} suffix="in 24h" />
               <Delta amount={stats.change7d} currency={query.currency} suffix="in 7 days" />
@@ -361,7 +366,7 @@ function Detail({ detail }: { detail: WatchDetail }) {
 
       <StatTiles detail={detail} />
 
-      <Card className="p-4 sm:p-5">
+      <Card className="p-5 sm:p-6">
         <SectionTitle hint="Every check is recorded. Earlier points come from the data source's own price history.">Price history</SectionTitle>
         <PriceHistory
           history={detail.history}
@@ -385,7 +390,7 @@ function Detail({ detail }: { detail: WatchDetail }) {
             <SectionTitle
               action={
                 latest.externalUrl && (
-                  <a href={latest.externalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent-strong hover:underline">
+                  <a href={latest.externalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-accent-strong hover:underline">
                     Open in Google Flights
                     <ExternalLink className="size-3.5" aria-hidden />
                   </a>
@@ -394,7 +399,7 @@ function Detail({ detail }: { detail: WatchDetail }) {
             >
               Cheapest flights right now
             </SectionTitle>
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {priced.slice(0, showAll ? priced.length : 5).map(({ offer, pricing }) => (
                 <OfferCard key={offer.id} offer={offer} pricing={pricing} adults={query.adults} airports={latest.airports} roundTrip={query.returnDate != null} />
               ))}
@@ -409,7 +414,8 @@ function Detail({ detail }: { detail: WatchDetail }) {
       )}
 
       <AlertList detail={detail} />
-    </div>
+      </PageBody>
+    </>
   );
 }
 
@@ -418,20 +424,20 @@ function MonthMoves({ calendar, currency }: { calendar: WatchCalendar; currency:
   const compared = calendar.months.filter((m) => m.change != null);
   const moved = compared.filter((m) => Math.round(m.change as number) !== 0).sort((a, b) => (a.change as number) - (b.change as number));
   return (
-    <Card className="p-4">
-      <h2 className="text-[15px] font-semibold tracking-tight">Since the last scan</h2>
+    <Card className="p-5">
+      <h2 className="display text-base font-bold">Since the last scan</h2>
       {compared.length === 0 ? (
         <p className="mt-2 text-[13px] text-ink-3">This is the first scan. After the next one, this shows which months got cheaper or dearer.</p>
       ) : moved.length === 0 ? (
         <p className="mt-2 text-[13px] text-ink-3">No month's cheapest fare has moved.</p>
       ) : (
-        <ul className="mt-2 space-y-1.5 text-[13px]">
+        <ul className="mt-3 space-y-2 text-[13px]">
           {moved.slice(0, 5).map((m) => (
             <li key={m.month} className="flex items-baseline justify-between gap-3">
               <span className="min-w-0 truncate text-ink-2">{monthLabel(m.month)}</span>
               <span className="flex shrink-0 items-baseline gap-2.5">
                 <Delta amount={m.change} currency={currency} />
-                <span className="tnum w-14 text-right font-medium">{money(m.cheapest.price, currency)}</span>
+                <span className="tnum w-16 text-right font-semibold">{money(m.cheapest.price, currency)}</span>
               </span>
             </li>
           ))}
@@ -453,7 +459,7 @@ function FlexDetail({ detail }: { detail: WatchDetail }) {
   const best = query.departDate && stats.current != null ? { departDate: query.departDate, returnDate: query.returnDate, price: stats.current } : null;
 
   return (
-    <div className="space-y-6">
+    <>
       <Header
         watch={watch}
         subtitle={`Any dates in ${windowLabel(flex.windowDays)} · ${tripLengthLabel(flex.tripDays)}`}
@@ -462,16 +468,18 @@ function FlexDetail({ detail }: { detail: WatchDetail }) {
         costPerCheck={scanCost}
         searchTo={flexPath(flex)}
       />
+      <PageBody>
+      <ActionNotes watch={watch} actions={actions} />
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_19rem]">
-        <Card className="flex flex-col justify-between p-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_19rem]">
+        <Card className="flex flex-col justify-between p-5">
           <div>
-            <div className="flex items-center gap-2 text-xs text-ink-3">
+            <div className="eyebrow flex items-center gap-2">
               Cheapest date now
               {!watch.active && <Badge>Paused</Badge>}
             </div>
-            <div className="mt-1.5 text-[3rem] leading-none font-semibold tracking-tight">{best ? money(best.price, query.currency) : '—'}</div>
-            {best && <div className="mt-2 text-[13px] font-medium text-ink-2">{flexDates(best)}</div>}
+            <div className="display mt-2 text-[3.25rem] leading-none font-extrabold">{best ? money(best.price, query.currency) : '—'}</div>
+            {best && <div className="mt-2 text-sm font-semibold text-ink-2">{flexDates(best)}</div>}
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
               <Delta amount={stats.change24h} currency={query.currency} suffix="in 24h" />
               <Delta amount={stats.change7d} currency={query.currency} suffix="in 7 days" />
@@ -483,7 +491,7 @@ function FlexDetail({ detail }: { detail: WatchDetail }) {
               <Link
                 to={dayPath(query, best)}
                 title={provider.costPerSearch > 0 ? `Uses ${plural(provider.costPerSearch, 'search', 'searches')}` : undefined}
-                className="inline-flex items-center gap-1 text-[13px] font-medium text-accent-strong hover:underline"
+                className="inline-flex items-center gap-1 text-[13px] font-semibold text-accent-strong hover:underline"
               >
                 See flights and airlines
                 <ArrowRight className="size-3.5" aria-hidden />
@@ -494,8 +502,8 @@ function FlexDetail({ detail }: { detail: WatchDetail }) {
         {calendar ? (
           <MonthMoves calendar={calendar} currency={query.currency} />
         ) : (
-          <Card className="p-4">
-            <h2 className="text-[15px] font-semibold tracking-tight">No fares yet</h2>
+          <Card className="p-5">
+            <h2 className="display text-base font-bold">No fares yet</h2>
             <p className="mt-2 text-[13px] text-ink-3">The last scan found no fares for these dates. It is repeated on schedule.</p>
           </Card>
         )}
@@ -506,7 +514,7 @@ function FlexDetail({ detail }: { detail: WatchDetail }) {
 
       {calendar && (
         <>
-          <Card className="p-4 sm:p-5">
+          <Card className="p-5 sm:p-6">
             <SectionTitle hint={`From the scan on ${timestamp(calendar.scannedAt)}. Pick a date to see its flights.`}>Lowest fare by departure date</SectionTitle>
             <FareByDate days={calendar.days} trip={query} targetPrice={watch.targetPrice} />
           </Card>
@@ -518,7 +526,7 @@ function FlexDetail({ detail }: { detail: WatchDetail }) {
         </>
       )}
 
-      <Card className="p-4 sm:p-5">
+      <Card className="p-5 sm:p-6">
         <SectionTitle hint="The cheapest fare for any date at each scan. Switch to By month to follow each departure month on its own.">Price history</SectionTitle>
         <PriceHistory
           history={detail.history}
@@ -531,7 +539,8 @@ function FlexDetail({ detail }: { detail: WatchDetail }) {
       </Card>
 
       <AlertList detail={detail} />
-    </div>
+      </PageBody>
+    </>
   );
 }
 
@@ -548,29 +557,41 @@ export function WatchPage() {
 
   if (!Number.isInteger(id) || id <= 0 || (error instanceof ApiRequestError && error.status === 404)) {
     return (
-      <ErrorNote
-        title="This tracked trip does not exist"
-        message="It may have been deleted."
-        action={
-          <Link to="/tracked" className="text-[13px] font-medium text-accent-strong hover:underline">
-            Back to tracked trips
-          </Link>
-        }
-      />
+      <PageBody>
+        <ErrorNote
+          title="This tracked trip does not exist"
+          message="It may have been deleted."
+          action={
+            <Link to="/tracked" className="text-[13px] font-semibold text-accent-strong hover:underline">
+              Back to tracked trips
+            </Link>
+          }
+        />
+      </PageBody>
     );
   }
-  if (error) return <ErrorNote message={error.message} />;
+  if (error) {
+    return (
+      <PageBody>
+        <ErrorNote message={error.message} />
+      </PageBody>
+    );
+  }
   if (isPending) {
     return (
-      <div className="space-y-6" aria-busy>
-        <Skeleton className="h-16 w-96 max-w-full" />
-        <div className="grid gap-3 lg:grid-cols-3">
-          <Skeleton className="h-40" />
-          <Skeleton className="h-40" />
-          <Skeleton className="h-40" />
-        </div>
-        <Skeleton className="h-96" />
-      </div>
+      <>
+        <PageHeader back={{ to: '/tracked', label: 'Tracked trips' }} title="Tracked trip" subtitle="Loading its prices…" />
+        <PageBody>
+          <div className="space-y-6" aria-busy>
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Skeleton className="h-44" />
+              <Skeleton className="h-44" />
+              <Skeleton className="h-44" />
+            </div>
+            <Skeleton className="h-96" />
+          </div>
+        </PageBody>
+      </>
     );
   }
   return data.watch.kind === 'flex' ? <FlexDetail key={data.watch.id} detail={data} /> : <Detail key={data.watch.id} detail={data} />;

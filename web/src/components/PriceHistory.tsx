@@ -112,7 +112,7 @@ function ChartTooltip({
           .sort((a, b) => a.value - b.value);
   if (lines.length === 0) return null;
   return (
-    <div className="rounded-lg border border-line bg-surface px-3 py-2 text-xs shadow-pop">
+    <div className="rounded-xl bg-surface px-3.5 py-2.5 text-xs shadow-pop">
       <div className="mb-1.5 text-ink-3">{tooltipTime.format(row.t)}</div>
       <div className="space-y-1">
         {lines.map((line) => (
@@ -288,8 +288,8 @@ export function PriceHistory({
                   })
                 }
                 className={cx(
-                  'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors',
-                  on ? 'border-line-strong/70 bg-surface text-ink-2' : 'border-transparent bg-surface-2 text-ink-3',
+                  'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors',
+                  on ? 'border-line-strong/80 bg-surface text-ink-2' : 'border-transparent bg-ink/[0.06] text-ink-3',
                 )}
               >
                 <span className="h-0.5 w-3.5 rounded-full" style={{ background: on ? slotColor(s.slot) : 'var(--line-strong)' }} />
@@ -324,7 +324,7 @@ export function PriceHistory({
       )}
 
       {view === 'table' ? (
-        <div className="max-h-[22rem] overflow-auto rounded-lg border border-line">
+        <div className="max-h-[22rem] overflow-auto rounded-xl border border-line">
           <table className="w-full border-collapse text-[13px]">
             <thead className="sticky top-0 bg-surface-2 text-left text-xs text-ink-3">
               <tr>
@@ -378,7 +378,7 @@ export function PriceHistory({
           </table>
         </div>
       ) : !hasChart ? (
-        <div className="flex h-[300px] flex-col items-center justify-center rounded-lg border border-dashed border-line-strong/70 px-6 text-center">
+        <div className="flex h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-line-strong px-6 text-center">
           <p className="font-medium">{mode === 'airlines' && plottable.length > 0 && visible.length === 0 ? kind.none : 'Not enough history to draw yet'}</p>
           <p className="mt-1 max-w-sm text-[13px] text-ink-3">{mode === 'airlines' ? kind.pending : 'The line appears after the second price check.'}</p>
         </div>

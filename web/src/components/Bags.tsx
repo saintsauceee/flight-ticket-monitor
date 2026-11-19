@@ -13,7 +13,7 @@ export function BagPrefsControl({ prefs, label = true }: { prefs: BagPrefs; labe
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
       {/* Phones: the label takes its own line so the two pickers stay side by side. */}
-      {label && <span className="text-[13px] font-medium text-ink-2 max-sm:w-full">Bags per traveller</span>}
+      {label && <span className="text-[13px] font-semibold text-ink-2 max-sm:w-full">Bags per traveller</span>}
       <label className="flex items-center gap-2 text-[13px] text-ink-3">
         <Backpack className="size-4" aria-hidden />
         Carry-on
@@ -68,8 +68,8 @@ export function BagChip({ kind, rule, currency, compact = false }: { kind: 'carr
     <span
       title={`${name}: ${text}${rule.status === 'fee' && rule.fee != null ? ' per traveller for the whole trip' : ''}`}
       className={cx(
-        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium whitespace-nowrap',
-        rule.status === 'included' ? 'bg-good-soft text-good-ink' : rule.status === 'fee' ? 'bg-warn-soft text-warn-ink' : 'bg-surface-2 text-ink-3',
+        'inline-flex h-6 items-center gap-1 rounded-full px-2 text-xs font-semibold whitespace-nowrap',
+        rule.status === 'included' ? 'bg-good-soft text-good-ink' : rule.status === 'fee' ? 'bg-warn-soft text-warn-ink' : 'bg-ink/[0.07] text-ink-3',
       )}
     >
       <Icon className="size-3.5" aria-hidden />

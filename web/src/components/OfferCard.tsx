@@ -18,6 +18,7 @@ export function priceOffer(offer: FlightOffer, bags: BagPrefs, adults: number): 
   return { ...totalWithBags(offer, bags, adults), wantsBags: bags.carryOn + bags.checked > 0 };
 }
 
+/** One direction of the trip: departure and arrival at the ends of a line, the duration and stops along it. */
 function SliceRow({ slice, label }: { slice: Slice; label: string | null }) {
   const first = slice.segments[0];
   const last = slice.segments[slice.segments.length - 1];
@@ -25,30 +26,40 @@ function SliceRow({ slice, label }: { slice: Slice; label: string | null }) {
   const shift = dayShift(first.departAt, last.arriveAt);
   const numbers = slice.segments.map((s) => s.flightNumber).join(', ');
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-      <div className="min-w-0">
-        <div className="tnum text-[15px] font-semibold tracking-tight">
-          {clock(first.departAt)} – {clock(last.arriveAt)}
+    <div className="flex items-center gap-x-3 sm:gap-x-4" title={`${first.from}–${last.to} · ${numbers}`}>
+      {label && <span className="eyebrow w-9 shrink-0">{label}</span>}
+      <div className="w-[4.5rem] shrink-0">
+        <div className="tnum text-base leading-tight font-bold tracking-tight whitespace-nowrap">{clock(first.departAt)}</div>
+        <div className="code-face mt-0.5 text-xs text-ink-3">{first.from}</div>
+      </div>
+      <div className="min-w-12 flex-1 text-center">
+        <div className="tnum text-xs font-semibold text-ink-2">{duration(slice.durationMin)}</div>
+        <div className="relative my-1.5 h-0.5 rounded-full bg-line-strong/70" aria-hidden>
+          <span className="absolute top-1/2 left-0 size-1.5 -translate-y-1/2 rounded-full bg-ink-3" />
+          {slice.layovers.map((layover, i) => (
+            <span
+              key={`${layover.airport}-${i}`}
+              className="absolute top-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-surface ring-2 ring-ink-3"
+              style={{ left: `${((i + 1) / (slice.layovers.length + 1)) * 100}%` }}
+            />
+          ))}
+          <span className="absolute top-1/2 right-0 size-1.5 -translate-y-1/2 rounded-full bg-ink-3" />
+        </div>
+        <div className="truncate text-xs text-ink-3">
+          {stopsLabel(slice.stops)}
+          {slice.layovers.length > 0 && <span className="code-face"> · {slice.layovers.map((l) => l.airport).join(', ')}</span>}
+        </div>
+      </div>
+      <div className="w-[5.25rem] shrink-0 text-right">
+        <div className="tnum text-base leading-tight font-bold tracking-tight whitespace-nowrap">
+          {clock(last.arriveAt)}
           {shift !== 0 && (
-            <sup className="ml-0.5 text-[10px] font-medium text-ink-3" title={`Arrives ${day(last.arriveAt)}`}>
+            <sup className="ml-0.5 text-[10px] font-semibold text-ink-3" title={`Arrives ${day(last.arriveAt)}`}>
               {shift > 0 ? `+${shift}` : shift}
             </sup>
           )}
         </div>
-        <div className="mt-0.5 truncate text-xs text-ink-3">
-          {label && <span className="font-medium text-ink-2">{label} · </span>}
-          <span className="code-face">
-            {first.from}–{last.to}
-          </span>{' '}
-          · {numbers}
-        </div>
-      </div>
-      <div className="text-right sm:text-left">
-        <div className="tnum text-sm text-ink-2">{duration(slice.durationMin)}</div>
-        <div className="mt-0.5 text-xs text-ink-3">
-          {stopsLabel(slice.stops)}
-          {slice.layovers.length > 0 && <span className="code-face"> · {slice.layovers.map((l) => l.airport).join(', ')}</span>}
-        </div>
+        <div className="code-face mt-0.5 text-xs text-ink-3">{last.to}</div>
       </div>
     </div>
   );
@@ -57,7 +68,7 @@ function SliceRow({ slice, label }: { slice: Slice; label: string | null }) {
 function DetailBlock({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div>
-      <h4 className="mb-1.5 text-xs font-semibold tracking-wide text-ink-3 uppercase">{title}</h4>
+      <h4 className="eyebrow mb-2">{title}</h4>
       <dl className="space-y-1 text-[13px]">{children}</dl>
     </div>
   );
@@ -82,7 +93,7 @@ function Itinerary({ slice, airports, title }: { slice: Slice; airports: Record<
   const place = (code: string) => airports[code]?.city ?? code;
   return (
     <div>
-      <h4 className="mb-2 text-xs font-semibold tracking-wide text-ink-3 uppercase">
+      <h4 className="eyebrow mb-2.5">
         {title} · {day(slice.segments[0]?.departAt ?? '')}
       </h4>
       <ol className="space-y-2">
@@ -111,7 +122,7 @@ function Itinerary({ slice, airports, title }: { slice: Slice; airports: Record<
                 </div>
               </div>
               {layover && (
-                <div className="my-2 ml-[6.25rem] flex items-center gap-1.5 rounded-md bg-surface-2 px-2 py-1 text-xs text-ink-2">
+                <div className="my-2 ml-[6.25rem] flex items-center gap-1.5 rounded-lg bg-ink/[0.06] px-2.5 py-1.5 text-xs text-ink-2">
                   <Clock className="size-3.5 text-ink-3" aria-hidden />
                   {duration(layover.durationMin)} layover in {place(layover.airport)}
                   {layover.overnight && ' (overnight)'}
@@ -153,10 +164,10 @@ export function OfferCard({
   const carriers = offer.airlines.map((a) => a.name).join(' + ');
   const returnMissing = roundTrip && offer.slices.length < 2;
   const meta = (
-    <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-3">
-      <span className="truncate">{carriers}</span>
+    <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-2">
+      <span className="truncate font-medium">{carriers}</span>
       {tags.map((tag) => (
-        <Badge key={tag} tone="accent">
+        <Badge key={tag} tone={tag === 'Cheapest' ? 'good' : 'accent'}>
           {tag}
         </Badge>
       ))}
@@ -166,20 +177,20 @@ export function OfferCard({
   );
 
   return (
-    <article className="rounded-xl border border-line bg-surface shadow-card transition-colors hover:border-line-strong">
+    <article className={cx('rounded-2xl bg-surface transition-shadow hover:shadow-lift', open ? 'shadow-lift' : 'shadow-card')}>
       <button
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 rounded-xl px-4 py-3.5 text-left sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] sm:gap-x-5"
+        className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3.5 rounded-2xl px-4 py-4 text-left sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] sm:gap-x-6 sm:px-5"
       >
-        <AirlineLogo airline={offer.airline} size={36} />
+        <AirlineLogo airline={offer.airline} size={44} />
 
         {/* Phones: airline beside the logo, flights on their own full-width row below. */}
         <div className="min-w-0 sm:hidden">{meta}</div>
 
-        <div className="col-span-3 min-w-0 space-y-2 sm:col-span-1">
+        <div className="col-span-3 min-w-0 space-y-3 sm:col-span-1">
           {offer.slices.map((slice, i) => (
             <SliceRow key={i} slice={slice} label={offer.slices.length > 1 ? (i === 0 ? 'Out' : 'Back') : null} />
           ))}
@@ -192,7 +203,7 @@ export function OfferCard({
         </div>
 
         <div className="col-start-3 row-start-1 text-right sm:col-start-auto sm:row-start-auto sm:w-36">
-          <div className="text-xl leading-tight font-semibold tracking-tight">{money(pricing.total, currency)}</div>
+          <div className="display text-[1.4rem] leading-tight font-extrabold">{money(pricing.total, currency)}</div>
           <div className="mt-0.5 text-xs text-ink-3">
             {!pricing.wantsBags ? (
               adults > 1 ? `fare for ${adults}` : 'fare only'
@@ -206,11 +217,13 @@ export function OfferCard({
           </div>
         </div>
 
-        <ChevronDown className={cx('hidden size-4 text-ink-3 transition-transform sm:block', open && 'rotate-180')} aria-hidden />
+        <span className={cx('hidden size-8 items-center justify-center rounded-full text-ink-3 transition-[background-color,transform] sm:flex', open ? 'rotate-180 bg-ink/[0.07]' : 'bg-transparent')} aria-hidden>
+          <ChevronDown className="size-4" />
+        </span>
       </button>
 
       {open && (
-        <div id={panelId} className="fade-up border-t border-line px-4 py-4">
+        <div id={panelId} className="fade-up rounded-b-2xl border-t border-line bg-surface-2/50 px-4 py-5 sm:px-5">
           <div className="grid gap-x-8 gap-y-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
             <div className="space-y-5">
               {offer.slices.map((slice, i) => (

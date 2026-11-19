@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode; /** Changing
     const { error } = this.state;
     if (!error) return this.props.children;
     return (
-      <div className="mx-auto w-full max-w-3xl p-4">
+      <div className="mx-auto w-full max-w-3xl px-4 py-8">
         <ErrorNote
           title="This page ran into a problem"
           message={`${error.message || 'Unknown error'}. Reloading usually fixes it. If it keeps happening, this message says where to look.`}

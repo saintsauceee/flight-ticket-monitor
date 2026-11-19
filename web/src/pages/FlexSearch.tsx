@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, RefreshCw, SearchX } from 'lucide-react';
+import { ArrowDown, ArrowRight, RefreshCw, SearchX } from 'lucide-react';
 import { useEffect } from 'react';
 import { Link } from 'react-router';
 import { flexScanCost, type FlexQuery, type FlexResult, type WatchSummary } from '@shared/types';
 import { CheapestDates, dayPath, FareByDate, MonthGrid } from '@/components/FlexCalendar';
 import { TrackBox } from '@/components/TrackBox';
-import { Button, Card, cx, EmptyState, ErrorNote, SectionTitle, Skeleton } from '@/components/ui';
+import { Badge, Button, buttonClass, Card, cx, EmptyState, ErrorNote, RouteTitle, SectionTitle, Skeleton } from '@/components/ui';
 import { api, keys } from '@/lib/api';
 import { flexDates, money, plural, relativeTime, shortDay, travellers, tripLengthLabel, windowLabel } from '@/lib/format';
 import { flexOfWatch, sameFlex } from '@/lib/query';
@@ -25,15 +25,16 @@ function Results({ result, watch, onRefresh, refreshing }: { result: FlexResult;
   const typical = prices.length ? median(prices) : null;
   const dearest = days.reduce<(typeof days)[number] | null>((max, d) => (!max || d.price > max.price ? d : max), null);
   const nearLow = cheapest ? days.filter((d) => d.price <= cheapest.price * 1.05).length : 0;
+  const belowTypical = cheapest && typical != null && typical > cheapest.price ? Math.round((1 - cheapest.price / typical) * 100) : 0;
 
   return (
-    <div className={cx('space-y-5 transition-opacity', refreshing && 'opacity-60')}>
+    <div className={cx('space-y-6 transition-opacity', refreshing && 'opacity-60')}>
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            {origin?.city ?? query.origin} <span className="text-ink-3">to</span> {destination?.city ?? query.destination}
+          <h1 className="display text-2xl font-extrabold sm:text-[1.75rem]">
+            <RouteTitle from={origin?.city ?? query.origin} to={destination?.city ?? query.destination} />
           </h1>
-          <p className="mt-0.5 text-[13px] text-ink-3">
+          <p className="mt-1 text-[13px] text-ink-3">
             Any dates, {shortDay(result.range.start)} – {shortDay(result.range.end)} · {tripLengthLabel(query.tripDays)} · {travellers(query)} · {plural(days.length, 'departure date')}
           </p>
         </div>
@@ -59,42 +60,50 @@ function Results({ result, watch, onRefresh, refreshing }: { result: FlexResult;
         </EmptyState>
       ) : (
         <>
-          <Card className="grid gap-x-8 gap-y-5 p-4 sm:p-5 lg:grid-cols-[auto_minmax(0,1fr)_17rem] lg:items-center">
-            <div>
-              <div className="text-xs text-ink-3">Cheapest date{query.adults > 1 ? `, for ${query.adults}` : ''}</div>
-              <div className="mt-0.5 text-[2.5rem] leading-none font-semibold tracking-tight">{money(cheapest.price, query.currency)}</div>
-              <div className="mt-1.5 text-[13px] font-medium text-ink-2">{flexDates(cheapest)}</div>
-              <Link
-                to={dayPath(query, cheapest)}
-                title={provider.costPerSearch > 0 ? `Uses ${plural(provider.costPerSearch, 'search', 'searches')}` : undefined}
-                className="mt-3 inline-flex h-8 items-center gap-1.5 rounded-lg border border-line-strong/70 bg-surface px-2.5 text-[13px] font-medium transition-colors hover:bg-surface-2"
-              >
-                See flights and airlines
-                <ArrowRight className="size-3.5" aria-hidden />
-              </Link>
+          <Card className="overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="grid gap-x-10 gap-y-6 p-5 sm:p-6 md:grid-cols-[auto_minmax(0,1fr)] md:items-center">
+              <div>
+                <div className="eyebrow">Cheapest date{query.adults > 1 ? `, for ${query.adults}` : ''}</div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                  <span className="display text-5xl leading-none font-extrabold">{money(cheapest.price, query.currency)}</span>
+                  {belowTypical > 0 && (
+                    <Badge tone="good">
+                      <ArrowDown className="size-3" aria-hidden />
+                      {belowTypical}% below typical
+                    </Badge>
+                  )}
+                </div>
+                <div className="mt-2.5 text-sm font-semibold text-ink-2">{flexDates(cheapest)}</div>
+                <Link
+                  to={dayPath(query, cheapest)}
+                  title={provider.costPerSearch > 0 ? `Uses ${plural(provider.costPerSearch, 'search', 'searches')}` : undefined}
+                  className={buttonClass('secondary', 'md', 'mt-4 sm:pr-3.5')}
+                >
+                  See flights and airlines
+                  <ArrowRight className="size-4" aria-hidden />
+                </Link>
+              </div>
+
+              <dl className="grid grid-cols-3 gap-x-6 gap-y-3 md:border-l md:border-line md:pl-10">
+                <div>
+                  <dt className="text-xs font-medium text-ink-3">Typical fare</dt>
+                  <dd className="display mt-1 text-xl leading-tight font-bold">{typical != null ? money(typical, query.currency) : '—'}</dd>
+                  <dd className="mt-0.5 text-xs text-ink-3">the middle fare of all dates</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium text-ink-3">Dearest date</dt>
+                  <dd className="display mt-1 text-xl leading-tight font-bold">{dearest ? money(dearest.price, query.currency) : '—'}</dd>
+                  <dd className="mt-0.5 text-xs text-ink-3">{dearest ? `leaving ${shortDay(dearest.departDate)}` : ''}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs font-medium text-ink-3">Near the low</dt>
+                  <dd className="display mt-1 text-xl leading-tight font-bold">{plural(nearLow, 'date')}</dd>
+                  <dd className="mt-0.5 text-xs text-ink-3">within 5% of the cheapest</dd>
+                </div>
+              </dl>
             </div>
 
-            <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-[13px] lg:border-l lg:border-line lg:pl-8">
-              <div>
-                <dt className="text-xs text-ink-3">Typical fare</dt>
-                <dd className="tnum mt-0.5 text-lg leading-tight font-semibold tracking-tight">{typical != null ? money(typical, query.currency) : '—'}</dd>
-                <dd className="mt-0.5 text-xs text-ink-3">
-                  {typical != null && typical > cheapest.price ? `the cheapest date is ${Math.round((1 - cheapest.price / typical) * 100)}% below it` : 'across all dates'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-xs text-ink-3">Dearest date</dt>
-                <dd className="tnum mt-0.5 text-lg leading-tight font-semibold tracking-tight">{dearest ? money(dearest.price, query.currency) : '—'}</dd>
-                <dd className="mt-0.5 text-xs text-ink-3">{dearest ? `leaving ${shortDay(dearest.departDate)}` : ''}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-ink-3">Near the low</dt>
-                <dd className="tnum mt-0.5 text-lg leading-tight font-semibold tracking-tight">{plural(nearLow, 'date')}</dd>
-                <dd className="mt-0.5 text-xs text-ink-3">within 5% of the cheapest</dd>
-              </div>
-            </dl>
-
-            <div className="border-line max-lg:border-t max-lg:pt-4 lg:border-l lg:pl-8">
+            <div className="border-line bg-surface-2/70 p-5 max-lg:border-t sm:p-6 lg:border-l">
               <TrackBox
                 input={{ flex: query }}
                 watch={watch}
@@ -106,7 +115,7 @@ function Results({ result, watch, onRefresh, refreshing }: { result: FlexResult;
             </div>
           </Card>
 
-          <Card className="p-4 sm:p-5">
+          <Card className="p-5 sm:p-6">
             <SectionTitle hint={`${query.tripDays != null ? `Round trips of ${plural(query.tripDays, 'night')}` : 'One-way fares'}, by the day you leave. Pick a date to see its flights.`}>
               Lowest fare by departure date
             </SectionTitle>
@@ -153,14 +162,14 @@ export function FlexSearch({ flex }: { flex: FlexQuery }) {
 
   if (search.isPending) {
     return (
-      <div className="space-y-5" aria-busy aria-label="Pricing every departure date">
+      <div className="space-y-6" aria-busy aria-label="Pricing every departure date">
         <div>
           <Skeleton className="h-7 w-72" />
           <p className="mt-2 text-[13px] text-ink-3">Pricing every departure date in {windowLabel(flex.windowDays)}. With live fares this can take around ten seconds.</p>
         </div>
-        <Skeleton className="h-36" />
-        <Skeleton className="h-80" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Skeleton className="h-44" />
+        <Skeleton className="h-96" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }, (_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}

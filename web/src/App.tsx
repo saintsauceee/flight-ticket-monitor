@@ -3,7 +3,7 @@ import { Compass } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Link, Route, Routes } from 'react-router';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Layout } from './components/Layout';
+import { Layout, PageBody } from './components/Layout';
 import { EmptyState, Skeleton } from './components/ui';
 import { ApiRequestError } from './lib/api';
 import { AlertsPage } from './pages/AlertsPage';
@@ -26,15 +26,17 @@ const queryClient = new QueryClient({
 
 function NotFound() {
   return (
-    <EmptyState
-      icon={<Compass className="size-5" />}
-      title="Page not found"
-      action={
-        <Link to="/" className="text-sm font-medium text-accent-strong hover:underline">
-          Back to search
-        </Link>
-      }
-    />
+    <PageBody>
+      <EmptyState
+        icon={<Compass className="size-5" />}
+        title="Page not found"
+        action={
+          <Link to="/" className="text-sm font-semibold text-accent-strong hover:underline">
+            Back to search
+          </Link>
+        }
+      />
+    </PageBody>
   );
 }
 
@@ -51,7 +53,13 @@ export function App() {
               <Route
                 path="tracked/:id"
                 element={
-                  <Suspense fallback={<Skeleton className="h-96" />}>
+                  <Suspense
+                    fallback={
+                      <PageBody>
+                        <Skeleton className="h-96" />
+                      </PageBody>
+                    }
+                  >
                     <WatchPage />
                   </Suspense>
                 }

@@ -38,7 +38,7 @@ export function DateStrip({ query, provider }: { query: SearchQuery; provider: P
   const saving = low != null && selected?.minPrice != null ? selected.minPrice - low : 0;
 
   return (
-    <Card className="p-4 sm:p-5">
+    <Card className="p-5 sm:p-6">
       <SectionTitle
         hint={
           saving > 0
@@ -64,7 +64,7 @@ export function DateStrip({ query, provider }: { query: SearchQuery; provider: P
       {isPending ? (
         <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
           {Array.from({ length: 7 }, (_, i) => (
-            <Skeleton key={i} className="h-28" />
+            <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
       ) : error ? (
@@ -84,26 +84,27 @@ export function DateStrip({ query, provider }: { query: SearchQuery; provider: P
                   aria-current={isSelected ? 'date' : undefined}
                   title={d.returnDate ? `${shortDay(d.departDate)} – ${shortDay(d.returnDate)}` : shortDay(d.departDate)}
                   className={cx(
-                    'flex h-28 flex-col rounded-lg border px-2 pt-2 pb-1.5 text-center transition-colors',
-                    isSelected ? 'border-accent bg-accent-soft' : 'border-line hover:border-line-strong hover:bg-surface-2',
+                    // 12px corners: a step down from the 16px card these tiles sit in.
+                    'flex h-28 flex-col rounded-xl px-2 pt-2.5 pb-2 text-center transition-[background-color,box-shadow]',
+                    isSelected ? 'bg-accent-soft ring-2 ring-accent ring-inset' : 'bg-surface-2 hover:bg-surface hover:shadow-lift',
                   )}
                 >
                   <span className="text-[11px] leading-tight text-ink-3">
-                    {weekday(d.departDate)} <span className="font-medium whitespace-nowrap text-ink-2 max-sm:block">{shortDay(d.departDate)}</span>
+                    {weekday(d.departDate)} <span className="font-semibold whitespace-nowrap text-ink-2 max-sm:block">{shortDay(d.departDate)}</span>
                   </span>
                   <span className="relative mx-auto mt-2 mb-2.5 w-2 flex-1" aria-hidden>
-                    <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-line" />
+                    <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-line-strong/70" />
                     {level != null && (
                       <span
-                        className={cx('absolute left-0 size-2 translate-y-1/2 rounded-full ring-2 ring-surface', isLowest ? 'bg-accent' : 'bg-ink-3')}
+                        className={cx('absolute left-0 size-2 translate-y-1/2 rounded-full ring-2', isSelected ? 'ring-accent-soft' : 'ring-surface-2', isLowest ? 'bg-good' : 'bg-ink-3')}
                         style={{ bottom: `${level}%` }}
                       />
                     )}
                   </span>
-                  <span className={cx('tnum text-[13px] leading-tight font-semibold', d.minPrice == null && 'font-normal text-ink-3')}>
+                  <span className={cx('tnum text-sm leading-tight font-bold', d.minPrice == null && 'font-normal text-ink-3')}>
                     {d.minPrice != null ? money(d.minPrice, query.currency) : d.fetched ? 'None' : '—'}
                   </span>
-                  <span className="h-3.5 text-[10px] leading-tight font-medium text-accent-strong">{isLowest && priced.length > 1 ? 'Lowest' : ''}</span>
+                  <span className="h-3.5 text-[10px] leading-tight font-bold tracking-[0.06em] text-good-ink uppercase">{isLowest && priced.length > 1 ? 'Lowest' : ''}</span>
                 </Link>
               </li>
             );
